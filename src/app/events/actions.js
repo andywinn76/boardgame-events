@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { zonedInputToUtc } from '@/lib/dates';
+import { getBggGames } from '@/lib/bgg';
 
 function slugify(title) {
   const base = title
@@ -31,6 +32,36 @@ export async function createEvent(formData) {
   const startsAtLocal = formData.get('starts_at');
   const endsAtLocal = formData.get('ends_at');
   const seatLimitRaw = formData.get('seat_limit');
+  const featuredGamesEnabled = formData.get('featured_games_enabled') === 'on';
+
+  let featuredGameIds = [];
+  try {
+    const parsedIds = JSON.parse(String(formData.get('featured_games') || '[]'));
+    if (!Array.isArray(parsedIds)) throw new Error();
+    featuredGameIds = [...new Set(parsedIds.map(Number))];
+  } catch {
+    redirect(`/events/new?error=${encodeURIComponent('Featured games could not be read. Please select them again.')}`);
+  }
+
+  if (
+    featuredGameIds.length > 5 ||
+    featuredGameIds.some((id) => !Number.isInteger(id) || id <= 0)
+  ) {
+    redirect(`/events/new?error=${encodeURIComponent('Choose no more than five valid featured games.')}`);
+  }
+
+  let featuredGames = [];
+  if (featuredGamesEnabled && featuredGameIds.length > 0) {
+    try {
+      featuredGames = await getBggGames(featuredGameIds);
+    } catch (bggError) {
+      redirect(`/events/new?error=${encodeURIComponent(bggError.message)}`);
+    }
+
+    if (featuredGames.length !== featuredGameIds.length) {
+      redirect(`/events/new?error=${encodeURIComponent('One or more featured games could not be verified with BoardGameGeek.')}`);
+    }
+  }
 
   if (!title || !timezone || !startsAtLocal) {
     redirect(`/events/new?error=${encodeURIComponent('Title, date/time, and timezone are required')}`);
@@ -91,12 +122,24 @@ export async function createEvent(formData) {
       city: formData.get('city') || null,
       seat_limit: seatLimitRaw ? Number(seatLimitRaw) : null,
       allow_waitlist: formData.get('allow_waitlist') === 'on',
+      featured_games_enabled: featuredGamesEnabled,
     })
-    .select('slug')
+    .select('id, slug')
     .single();
 
   if (error) {
     redirect(`/events/new?error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (featuredGamesEnabled) {
+    const { error: featuredGamesError } = await supabase.rpc('set_event_featured_games', {
+      _event: event.id,
+      _games: featuredGames,
+    });
+
+    if (featuredGamesError) {
+      redirect(`/events/${event.slug}?error=${encodeURIComponent(`Event created, but featured games could not be saved: ${featuredGamesError.message}`)}`);
+    }
   }
 
   redirect(`/events/${event.slug}`);

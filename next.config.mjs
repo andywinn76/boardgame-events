@@ -8,6 +8,9 @@ const nextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  images: {
+    remotePatterns: [new URL('https://cf.geekdo-images.com/**')],
+  },
 };
 
 export default nextConfig;

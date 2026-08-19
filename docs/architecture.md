@@ -621,11 +621,14 @@ Steps 1–4 are a usable app. Everything after is quality of life.
 
 ## 4. Pass 2 — BoardGameGeek
 
-BGG's XML API2 (`https://boardgamegeek.com/xmlapi2/`) is read-only, public, and has **no OAuth**. Practical consequences:
+BGG's XML API2 (`https://boardgamegeek.com/xmlapi2/`) is read-only. BGG now requires application registration and a server-side bearer token for nearly all XML API use. Practical consequences:
 
+- Keep `BGG_API_TOKEN` server-only and make all BGG requests through our route handlers or server actions. Public-facing pages must credit BoardGameGeek under its API terms.
 - "Linking an account" is really "claiming a username." A soft verification: have the user paste a one-time token into a public profile field, then fetch `/user?name=X` and check whether it echoes back. Confirm which fields that endpoint actually returns before you build the flow — `/user` exposes a limited set, and the bio is not among them.
 - `/collection?username=X&stats=1` returns **HTTP 202** while BGG queues the request. You must retry with backoff — this alone means collection sync belongs in a Supabase Edge Function or a cron job, never in a request handler.
-- Be polite: ~1 request/second, cache aggressively, and never fetch per page load.
+- Cache aggressively and never fetch BGG data during ordinary page loads. BGG currently warns that requests made more frequently than roughly five seconds apart may be throttled.
+- Featured games are limited to five per event. Search returns lightweight matches; selecting a result fetches its box art, and publishing batch-verifies selected IDs before caching metadata in `games` and linking it through `event_games`.
+- XML API2 does not expose the game Files area, so rules PDFs must not be scraped. A future organizer-supplied rules URL is the safe fallback.
 
 ```sql
 create table bgg_accounts (

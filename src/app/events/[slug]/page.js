@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { MapPin, ExternalLink, CalendarPlus, Settings, Users, MessageSquare, Flag } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { formatEventTime } from '@/lib/dates';
@@ -19,7 +20,7 @@ export default async function EventDetailPage({ params, searchParams }) {
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, description, starts_at, ends_at, timezone, location_label, neighborhood, cross_streets, city, venue_id, seat_limit, allow_waitlist, visibility, status, cancellation_reason, created_by, profiles!events_created_by_fkey(username, display_name)'
+      'id, title, description, starts_at, ends_at, timezone, location_label, neighborhood, cross_streets, city, venue_id, seat_limit, allow_waitlist, featured_games_enabled, visibility, status, cancellation_reason, created_by, profiles!events_created_by_fkey(username, display_name)'
     )
     .eq('slug', slug)
     .single();
@@ -34,9 +35,25 @@ export default async function EventDetailPage({ params, searchParams }) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: seatCounts }, { data: attendeeNames }, { data: myRsvp }, { data: venue }, { data: hostRow }] = await Promise.all([
+  const [
+    { data: seatCounts },
+    { data: attendeeNames },
+    { data: featuredGames },
+    { data: myRsvp },
+    { data: venue },
+    { data: hostRow },
+  ] = await Promise.all([
     supabase.from('event_seat_counts').select('seats_taken, seats_left').eq('event_id', event.id).single(),
     supabase.rpc('event_attendee_names', { _event: event.id }),
+    event.featured_games_enabled
+      ? supabase
+          .from('event_games')
+          .select(
+            'sort_order, games(bgg_id, name, year_published, min_players, max_players, playtime_minutes, weight, thumbnail_url, image_url)'
+          )
+          .eq('event_id', event.id)
+          .order('sort_order')
+      : Promise.resolve({ data: [] }),
     user
       ? supabase.from('rsvps').select('status').eq('event_id', event.id).eq('user_id', user.id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -123,7 +140,7 @@ export default async function EventDetailPage({ params, searchParams }) {
             </p>
 
             {venue?.address_line1 && (
-              <p className="text-muted-foreground">
+              <p className="my-2 text-muted-foreground">
                 {venue.address_line1}
                 {venue.address_line2 ? `, ${venue.address_line2}` : ''}
                 <br />
@@ -166,6 +183,62 @@ export default async function EventDetailPage({ params, searchParams }) {
       )}
 
       {event.description && <p className="whitespace-pre-wrap text-foreground">{event.description}</p>}
+
+      {event.featured_games_enabled && featuredGames?.length > 0 && (
+        <section className="space-y-3">
+          <div>
+            <h2 className="font-heading text-xl font-bold text-foreground">Featured Games</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Games the organizer is planning to bring to the table.</p>
+          </div>
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredGames.map(({ games: game }) => (
+              <li key={game.bgg_id}>
+                <Card className="h-full">
+                  <CardContent className="flex h-full gap-3">
+                    {game.thumbnail_url || game.image_url ? (
+                      <Image
+                        src={game.thumbnail_url || game.image_url}
+                        alt={`${game.name} box art`}
+                        width={80}
+                        height={80}
+                        className="size-20 shrink-0 rounded-md object-contain"
+                      />
+                    ) : (
+                      <div className="size-20 shrink-0 rounded-md bg-muted" aria-hidden="true" />
+                    )}
+                    <div className="min-w-0">
+                      <h3 className="font-heading font-semibold text-foreground">{game.name}</h3>
+                      {game.year_published && <p className="text-xs text-muted-foreground">{game.year_published}</p>}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {game.min_players && game.max_players
+                          ? `${game.min_players}–${game.max_players} players`
+                          : null}
+                        {game.playtime_minutes ? ` · ${game.playtime_minutes} min` : ''}
+                        {game.weight ? ` · Weight ${Number(game.weight).toFixed(1)}` : ''}
+                      </p>
+                      <a
+                        href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="mt-2 inline-block text-xs font-medium text-primary underline underline-offset-2"
+                      >
+                        View on BoardGameGeek
+                      </a>
+                    </div>
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">
+            Game information and images provided by{' '}
+            <a href="https://boardgamegeek.com" target="_blank" rel="noreferrer noopener" className="underline underline-offset-2">
+              BoardGameGeek
+            </a>
+            .
+          </p>
+        </section>
+      )}
 
       <Card>
         <CardContent className="flex items-center gap-2 text-sm">

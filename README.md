@@ -16,6 +16,16 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### BoardGameGeek integration
+
+Featured-game search requires an approved BoardGameGeek XML API application token. Keep the token server-side in local and Vercel environments:
+
+```bash
+BGG_API_TOKEN=your-application-token
+```
+
+Register the application at [BoardGameGeek Applications](https://boardgamegeek.com/applications). Without this variable, event creation remains available but the featured-game picker explains that BGG search is not configured.
+
 You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

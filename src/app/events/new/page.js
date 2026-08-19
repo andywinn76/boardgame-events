@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FeaturedGamesPicker } from '@/components/featured-games-picker';
 
 const selectClass =
   'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
@@ -76,6 +77,8 @@ export default async function NewEventPage({ searchParams }) {
           </Label>
           <Textarea id="description" name="description" rows={3} />
         </div>
+
+        <FeaturedGamesPicker />
 
         <fieldset className="space-y-4 rounded-xl border border-border bg-muted/30 p-4">
           <legend className="px-1 text-sm font-medium text-foreground">
