@@ -59,6 +59,9 @@ export async function updateProfile(_previousState, formData) {
   const firstName = String(formData.get('first_name') || '').trim();
   const lastName = String(formData.get('last_name') || '').trim();
   const preferredPronouns = String(formData.get('preferred_pronouns') || '').trim();
+  const bio = String(formData.get('bio') || '').trim();
+  const gamesYesPlease = String(formData.get('games_yes_please') || '').trim();
+  const gamesNoThanks = String(formData.get('games_no_thanks') || '').trim();
 
   if (!/^[a-z0-9_]{3,24}$/.test(username)) {
     return {
@@ -79,6 +82,10 @@ export async function updateProfile(_previousState, formData) {
     return { status: 'error', message: 'Preferred pronouns must be 80 characters or fewer.' };
   }
 
+  if (bio.length > 1000 || gamesYesPlease.length > 1000 || gamesNoThanks.length > 1000) {
+    return { status: 'error', message: 'About Me and game preference fields must be 1,000 characters or fewer.' };
+  }
+
   const { error } = await supabase
     .from('profiles')
     .update({
@@ -86,6 +93,9 @@ export async function updateProfile(_previousState, formData) {
       first_name: firstName,
       last_name: lastName || null,
       preferred_pronouns: preferredPronouns || null,
+      bio: bio || null,
+      games_yes_please: gamesYesPlease || null,
+      games_no_thanks: gamesNoThanks || null,
       display_name: [firstName, lastName].filter(Boolean).join(' '),
     })
     .eq('id', user.id);

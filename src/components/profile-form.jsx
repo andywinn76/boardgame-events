@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react';
 import { updateProfile } from '@/app/settings/actions';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -15,6 +16,9 @@ export function ProfileForm({ profile }) {
   const [lastName, setLastName] = useState(profile?.last_name || '');
   const [username, setUsername] = useState(profile?.username || '');
   const [preferredPronouns, setPreferredPronouns] = useState(profile?.preferred_pronouns || '');
+  const [bio, setBio] = useState(profile?.bio || '');
+  const [gamesYesPlease, setGamesYesPlease] = useState(profile?.games_yes_please || '');
+  const [gamesNoThanks, setGamesNoThanks] = useState(profile?.games_no_thanks || '');
 
   return (
     <>
@@ -97,6 +101,45 @@ export function ProfileForm({ profile }) {
           <p id="username-help" className="text-xs text-muted-foreground">
             3–24 lowercase letters, numbers, or underscores.
           </p>
+        </div>
+        <div className="space-y-4 border-t border-border pt-4">
+          <h2 className="font-heading text-lg font-semibold text-foreground">About Me</h2>
+          <div className="space-y-1.5">
+            <Label htmlFor="bio">About me</Label>
+            <Textarea
+              id="bio"
+              name="bio"
+              maxLength={1000}
+              rows={4}
+              placeholder="Tell other players a little about yourself"
+              value={bio}
+              onChange={(event) => setBio(event.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="games_yes_please">Yes please</Label>
+            <Textarea
+              id="games_yes_please"
+              name="games_yes_please"
+              maxLength={1000}
+              rows={3}
+              placeholder="Games and genres I love"
+              value={gamesYesPlease}
+              onChange={(event) => setGamesYesPlease(event.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="games_no_thanks">No thanks</Label>
+            <Textarea
+              id="games_no_thanks"
+              name="games_no_thanks"
+              maxLength={1000}
+              rows={3}
+              placeholder="Games and genres I don't want to play"
+              value={gamesNoThanks}
+              onChange={(event) => setGamesNoThanks(event.target.value)}
+            />
+          </div>
         </div>
         <Button type="submit" disabled={pending}>
           {pending ? 'Updating…' : 'Update profile'}

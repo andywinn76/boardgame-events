@@ -48,6 +48,8 @@ create table profiles (
   display_name text,
   avatar_url   text,
   bio          text,
+  games_yes_please text,
+  games_no_thanks text,
   home_city    text,
   timezone     text not null default 'America/Denver',
   ics_token    text unique default encode(gen_random_bytes(16),'hex'),  -- calendar feed auth
