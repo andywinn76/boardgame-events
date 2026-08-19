@@ -44,6 +44,7 @@ create table profiles (
   username     citext unique not null check (username ~ '^[a-z0-9_]{3,24}$'),
   first_name   text,
   last_name    text,
+  preferred_pronouns text,
   display_name text,
   avatar_url   text,
   bio          text,

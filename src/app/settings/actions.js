@@ -45,7 +45,7 @@ export async function updatePreferences(formData) {
   revalidatePath('/settings/preferences');
 }
 
-export async function updateProfile(formData) {
+export async function updateProfile(_previousState, formData) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -58,19 +58,25 @@ export async function updateProfile(formData) {
   const username = String(formData.get('username') || '').trim().toLowerCase();
   const firstName = String(formData.get('first_name') || '').trim();
   const lastName = String(formData.get('last_name') || '').trim();
+  const preferredPronouns = String(formData.get('preferred_pronouns') || '').trim();
 
   if (!/^[a-z0-9_]{3,24}$/.test(username)) {
-    redirect(
-      `/settings/preferences?error=${encodeURIComponent('Username must be 3–24 characters using only lowercase letters, numbers, and underscores.')}`
-    );
+    return {
+      status: 'error',
+      message: 'Username must be 3–24 characters using only lowercase letters, numbers, and underscores.',
+    };
   }
 
   if (!firstName) {
-    redirect(`/settings/preferences?error=${encodeURIComponent('First name is required.')}`);
+    return { status: 'error', message: 'First name is required.' };
   }
 
   if (firstName.length > 80 || lastName.length > 80) {
-    redirect(`/settings/preferences?error=${encodeURIComponent('Names must be 80 characters or fewer.')}`);
+    return { status: 'error', message: 'Names must be 80 characters or fewer.' };
+  }
+
+  if (preferredPronouns.length > 80) {
+    return { status: 'error', message: 'Preferred pronouns must be 80 characters or fewer.' };
   }
 
   const { error } = await supabase
@@ -79,17 +85,18 @@ export async function updateProfile(formData) {
       username,
       first_name: firstName,
       last_name: lastName || null,
+      preferred_pronouns: preferredPronouns || null,
       display_name: [firstName, lastName].filter(Boolean).join(' '),
     })
     .eq('id', user.id);
 
   if (error) {
     const message = error.code === '23505' ? 'That username is already taken.' : error.message;
-    redirect(`/settings/preferences?error=${encodeURIComponent(message)}`);
+    return { status: 'error', message };
   }
 
   revalidatePath('/', 'layout');
-  redirect('/settings/preferences?updated=profile');
+  return { status: 'success', message: 'Your profile has been updated.' };
 }
 
 export async function addConsideration(formData) {
@@ -138,6 +145,52 @@ export async function deleteConsideration(formData) {
   const id = formData.get('id');
 
   await supabase.from('user_considerations').delete().eq('id', id);
+
+  revalidatePath('/settings/considerations');
+}
+
+export async function updateConsideration(formData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  const id = String(formData.get('id') || '');
+  const label = String(formData.get('label') || '').trim();
+  const kind = String(formData.get('kind') || 'other');
+  const visibility = String(formData.get('visibility') || 'hosts_only');
+  const severityRaw = formData.get('severity');
+  const allowedKinds = ['vision', 'hearing', 'mobility', 'allergy', 'dietary', 'sensory', 'other'];
+  const allowedVisibilities = ['private', 'hosts_only', 'attendees', 'public'];
+
+  if (!id || !label || !allowedKinds.includes(kind) || !allowedVisibilities.includes(visibility)) {
+    redirect(`/settings/considerations?error=${encodeURIComponent('Please provide valid consideration details.')}`);
+  }
+
+  const severity = severityRaw ? Number(severityRaw) : null;
+  if (severity != null && ![1, 2, 3].includes(severity)) {
+    redirect(`/settings/considerations?error=${encodeURIComponent('Severity must be between 1 and 3.')}`);
+  }
+
+  const { error } = await supabase
+    .from('user_considerations')
+    .update({
+      kind,
+      label,
+      details: String(formData.get('details') || '').trim() || null,
+      severity,
+      visibility,
+    })
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    redirect(`/settings/considerations?error=${encodeURIComponent(error.message)}`);
+  }
 
   revalidatePath('/settings/considerations');
 }

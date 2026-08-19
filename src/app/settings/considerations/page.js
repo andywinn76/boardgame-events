@@ -1,21 +1,13 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { addConsideration, deleteConsideration } from '../actions';
-import { PageShell } from '@/components/page-shell';
+import { addConsideration } from '../actions';
+import { ConsiderationCard } from '@/components/consideration-card';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-
-const VISIBILITY_LABEL = {
-  private: 'Private — just me',
-  hosts_only: 'Hosts only',
-  attendees: 'Attendees of shared events',
-  public: 'Public',
-};
 
 const selectClass =
   'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
@@ -38,16 +30,12 @@ export default async function ConsiderationsPage({ searchParams }) {
     .order('created_at', { ascending: false });
 
   return (
-    <PageShell>
+    <>
       <div>
-        <h1 className="font-heading text-3xl font-bold text-foreground">Accessibility &amp; dietary considerations</h1>
+        <h2 className="font-heading text-xl font-bold text-foreground">Considerations</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Each item has its own visibility. Hosts of events you&rsquo;ve RSVP&rsquo;d to only ever see an
-          aggregated, de-duplicated summary — never a list tied to your name.{' '}
-          <Link href="/settings/preferences" className="underline underline-offset-2">
-            Matching preferences
-          </Link>{' '}
-          live separately.
+          aggregated, de-duplicated summary — never a list tied to your name.
         </p>
       </div>
 
@@ -61,25 +49,7 @@ export default async function ConsiderationsPage({ searchParams }) {
         <ul className="space-y-2">
           {considerations.map((c) => (
             <li key={c.id}>
-              <Card>
-                <CardContent className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{c.label}</p>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <Badge variant="secondary">{c.kind}</Badge>
-                      <Badge variant="outline">{VISIBILITY_LABEL[c.visibility]}</Badge>
-                      {c.severity && <Badge variant="outline">severity {c.severity}</Badge>}
-                    </div>
-                    {c.details && <p className="mt-1.5 text-sm text-muted-foreground">{c.details}</p>}
-                  </div>
-                  <form action={deleteConsideration}>
-                    <input type="hidden" name="id" value={c.id} />
-                    <button type="submit" className="shrink-0 text-sm font-medium text-destructive underline underline-offset-2">
-                      Remove
-                    </button>
-                  </form>
-                </CardContent>
-              </Card>
+              <ConsiderationCard consideration={c} />
             </li>
           ))}
         </ul>
@@ -87,8 +57,12 @@ export default async function ConsiderationsPage({ searchParams }) {
 
       <Card>
         <CardContent>
-          <form action={addConsideration} className="space-y-4">
-            <h2 className="text-sm font-medium text-foreground">Add a consideration</h2>
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+              Add a consideration
+              <Plus className="size-4 text-muted-foreground transition-transform group-open:rotate-45" />
+            </summary>
+            <form action={addConsideration} className="mt-4 space-y-4 border-t border-border pt-4">
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -138,12 +112,13 @@ export default async function ConsiderationsPage({ searchParams }) {
               </select>
             </div>
 
-            <Button type="submit" size="lg" className="w-full">
+            <Button type="submit">
               Add
             </Button>
-          </form>
+            </form>
+          </details>
         </CardContent>
       </Card>
-    </PageShell>
+    </>
   );
 }

@@ -1,11 +1,9 @@
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
-import Link from 'next/link';
 import { CalendarClock, Info } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { updatePreferences, updateProfile, regenerateIcsToken } from '../actions';
-import { PageShell } from '@/components/page-shell';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { updatePreferences, regenerateIcsToken } from '../actions';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -44,7 +42,7 @@ function WeightInfo({ id }) {
 }
 
 export default async function PreferencesPage({ searchParams }) {
-  const { error, updated } = await searchParams;
+  const { error } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -56,7 +54,7 @@ export default async function PreferencesPage({ searchParams }) {
 
   const [{ data: prefs }, { data: profile }, headersList] = await Promise.all([
     supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle(),
-    supabase.from('profiles').select('username, first_name, last_name, ics_token').eq('id', user.id).single(),
+    supabase.from('profiles').select('ics_token').eq('id', user.id).single(),
     headers(),
   ]);
 
@@ -64,33 +62,19 @@ export default async function PreferencesPage({ searchParams }) {
   const feedUrl = `${host?.startsWith('localhost') ? 'http' : 'https'}://${host}/api/ics/me?token=${profile?.ics_token}`;
 
   return (
-    <PageShell>
-      <div>
-        <h1 className="font-heading text-3xl font-bold text-foreground">Matching preferences</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Optional hints hosts can use to suggest games and events you&rsquo;ll like.{' '}
-          <Link href="/settings/considerations" className="underline underline-offset-2">
-            Manage accessibility &amp; dietary considerations
-          </Link>{' '}
-          separately.
-        </p>
-      </div>
-
+    <>
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      {updated === 'profile' && (
-        <Alert>
-          <AlertDescription>Your profile has been updated.</AlertDescription>
-        </Alert>
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Gaming Preferences</CardTitle>
+          <CardDescription>
+            Optional hints hosts can use to suggest games and events you&rsquo;ll like.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form action={updatePreferences} className="space-y-4">
@@ -244,65 +228,8 @@ export default async function PreferencesPage({ searchParams }) {
               </select>
             </div>
 
-            <Button type="submit" size="lg" className="w-full">
+            <Button type="submit">
               Save preferences
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Profile</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={updateProfile} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="first_name">First name</Label>
-                <Input
-                  id="first_name"
-                  name="first_name"
-                  type="text"
-                  required
-                  maxLength={80}
-                  autoComplete="given-name"
-                  defaultValue={profile?.first_name || ''}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="last_name">
-                  Last name <span className="font-normal text-muted-foreground">(optional)</span>
-                </Label>
-                <Input
-                  id="last_name"
-                  name="last_name"
-                  type="text"
-                  maxLength={80}
-                  autoComplete="family-name"
-                  defaultValue={profile?.last_name || ''}
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                required
-                minLength={3}
-                maxLength={24}
-                pattern="[a-z0-9_]+"
-                defaultValue={profile?.username || ''}
-                aria-describedby="username-help"
-              />
-              <p id="username-help" className="text-xs text-muted-foreground">
-                3–24 lowercase letters, numbers, or underscores.
-              </p>
-            </div>
-            <Button type="submit" variant="outline">
-              Update profile
             </Button>
           </form>
         </CardContent>
@@ -321,12 +248,12 @@ export default async function PreferencesPage({ searchParams }) {
           </p>
           <Input readOnly defaultValue={feedUrl} className="text-xs text-muted-foreground" />
           <form action={regenerateIcsToken}>
-            <Button type="submit" variant="outline" size="sm">
+            <Button type="submit" size="sm">
               Regenerate link
             </Button>
           </form>
         </CardContent>
       </Card>
-    </PageShell>
+    </>
   );
 }
