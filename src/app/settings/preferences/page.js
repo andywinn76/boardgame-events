@@ -35,7 +35,7 @@ function WeightInfo({ id }) {
       <span
         id={id}
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden w-64 -translate-x-1/2 rounded-lg bg-foreground px-3 py-2 text-xs font-normal leading-relaxed text-background shadow-lg group-hover:block group-focus-within:block"
+        className="pointer-events-none absolute top-full left-1/2 z-10 mt-2 hidden w-64 -translate-x-1/2 rounded-lg bg-foreground px-3 py-2 text-xs font-normal leading-relaxed text-background shadow-lg group-hover:block group-focus-within:block"
       >
         Board game weight describes complexity: 1 is light and easy to learn, while 5 is highly complex with heavier rules and strategy.
       </span>
@@ -90,62 +90,8 @@ export default async function PreferencesPage({ searchParams }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Profile</CardTitle>
+          <CardTitle className="text-lg">Gaming Preferences</CardTitle>
         </CardHeader>
-        <CardContent>
-          <form action={updateProfile} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="first_name">First name</Label>
-                <Input
-                  id="first_name"
-                  name="first_name"
-                  type="text"
-                  required
-                  maxLength={80}
-                  autoComplete="given-name"
-                  defaultValue={profile?.first_name || ''}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="last_name">
-                  Last name <span className="font-normal text-muted-foreground">(optional)</span>
-                </Label>
-                <Input
-                  id="last_name"
-                  name="last_name"
-                  type="text"
-                  maxLength={80}
-                  autoComplete="family-name"
-                  defaultValue={profile?.last_name || ''}
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                required
-                minLength={3}
-                maxLength={24}
-                pattern="[a-z0-9_]+"
-                defaultValue={profile?.username || ''}
-                aria-describedby="username-help"
-              />
-              <p id="username-help" className="text-xs text-muted-foreground">
-                3–24 lowercase letters, numbers, or underscores.
-              </p>
-            </div>
-            <Button type="submit" variant="outline">
-              Update profile
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
         <CardContent>
           <form action={updatePreferences} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -300,6 +246,63 @@ export default async function PreferencesPage({ searchParams }) {
 
             <Button type="submit" size="lg" className="w-full">
               Save preferences
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Profile</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form action={updateProfile} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="first_name">First name</Label>
+                <Input
+                  id="first_name"
+                  name="first_name"
+                  type="text"
+                  required
+                  maxLength={80}
+                  autoComplete="given-name"
+                  defaultValue={profile?.first_name || ''}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="last_name">
+                  Last name <span className="font-normal text-muted-foreground">(optional)</span>
+                </Label>
+                <Input
+                  id="last_name"
+                  name="last_name"
+                  type="text"
+                  maxLength={80}
+                  autoComplete="family-name"
+                  defaultValue={profile?.last_name || ''}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                required
+                minLength={3}
+                maxLength={24}
+                pattern="[a-z0-9_]+"
+                defaultValue={profile?.username || ''}
+                aria-describedby="username-help"
+              />
+              <p id="username-help" className="text-xs text-muted-foreground">
+                3–24 lowercase letters, numbers, or underscores.
+              </p>
+            </div>
+            <Button type="submit" variant="outline">
+              Update profile
             </Button>
           </form>
         </CardContent>
