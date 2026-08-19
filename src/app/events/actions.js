@@ -17,6 +17,49 @@ function slugify(title) {
   return `${base}-${suffix}`;
 }
 
+function parseFeaturedGameIds(formData) {
+  let parsedIds;
+  try {
+    parsedIds = JSON.parse(String(formData.get('featured_games') || '[]'));
+  } catch {
+    throw new Error('Featured games could not be read. Please select them again.');
+  }
+
+  if (!Array.isArray(parsedIds)) {
+    throw new Error('Featured games could not be read. Please select them again.');
+  }
+
+  const ids = [...new Set(parsedIds.map(Number))];
+  if (ids.length > 5 || ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+    throw new Error('Choose no more than five valid featured games.');
+  }
+  return ids;
+}
+
+async function resolveFeaturedGames(supabase, ids) {
+  if (!ids.length) return [];
+
+  const { data: cachedGames } = await supabase
+    .from('games')
+    .select(
+      'bgg_id, name, year_published, min_players, max_players, playtime_minutes, weight, thumbnail_url, image_url'
+    )
+    .in('bgg_id', ids);
+  const byId = new Map((cachedGames || []).map((game) => [game.bgg_id, game]));
+  const missingIds = ids.filter((id) => !byId.has(id));
+
+  if (missingIds.length) {
+    const fetchedGames = await getBggGames(missingIds);
+    fetchedGames.forEach((game) => byId.set(game.bgg_id, game));
+  }
+
+  const games = ids.map((id) => byId.get(id)).filter(Boolean);
+  if (games.length !== ids.length) {
+    throw new Error('One or more featured games could not be verified with BoardGameGeek.');
+  }
+  return games;
+}
+
 export async function createEvent(formData) {
   const supabase = await createClient();
   const {
@@ -34,32 +77,19 @@ export async function createEvent(formData) {
   const seatLimitRaw = formData.get('seat_limit');
   const featuredGamesEnabled = formData.get('featured_games_enabled') === 'on';
 
-  let featuredGameIds = [];
+  let featuredGameIds;
   try {
-    const parsedIds = JSON.parse(String(formData.get('featured_games') || '[]'));
-    if (!Array.isArray(parsedIds)) throw new Error();
-    featuredGameIds = [...new Set(parsedIds.map(Number))];
-  } catch {
-    redirect(`/events/new?error=${encodeURIComponent('Featured games could not be read. Please select them again.')}`);
-  }
-
-  if (
-    featuredGameIds.length > 5 ||
-    featuredGameIds.some((id) => !Number.isInteger(id) || id <= 0)
-  ) {
-    redirect(`/events/new?error=${encodeURIComponent('Choose no more than five valid featured games.')}`);
+    featuredGameIds = parseFeaturedGameIds(formData);
+  } catch (featuredGamesError) {
+    redirect(`/events/new?error=${encodeURIComponent(featuredGamesError.message)}`);
   }
 
   let featuredGames = [];
   if (featuredGamesEnabled && featuredGameIds.length > 0) {
     try {
-      featuredGames = await getBggGames(featuredGameIds);
+      featuredGames = await resolveFeaturedGames(supabase, featuredGameIds);
     } catch (bggError) {
       redirect(`/events/new?error=${encodeURIComponent(bggError.message)}`);
-    }
-
-    if (featuredGames.length !== featuredGameIds.length) {
-      redirect(`/events/new?error=${encodeURIComponent('One or more featured games could not be verified with BoardGameGeek.')}`);
     }
   }
 
@@ -143,6 +173,88 @@ export async function createEvent(formData) {
   }
 
   redirect(`/events/${event.slug}`);
+}
+
+export async function updateEvent(formData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect('/login');
+
+  const eventId = String(formData.get('event_id') || '');
+  const slug = String(formData.get('slug') || '');
+  const title = String(formData.get('title') || '').trim();
+  const timezone = String(formData.get('timezone') || '');
+  const startsAtLocal = String(formData.get('starts_at') || '');
+  const endsAtLocal = String(formData.get('ends_at') || '');
+  const seatLimitRaw = String(formData.get('seat_limit') || '');
+  const featuredGamesEnabled = formData.get('featured_games_enabled') === 'on';
+
+  if (!eventId || !slug || !title || !timezone || !startsAtLocal) {
+    redirect(`/events/${slug}/edit?error=${encodeURIComponent('Title, date/time, and timezone are required')}`);
+  }
+
+  const { data: hostRow } = await supabase
+    .from('event_hosts')
+    .select('role')
+    .eq('event_id', eventId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (!hostRow) redirect(`/events/${slug}`);
+
+  let featuredGameIds;
+  try {
+    featuredGameIds = parseFeaturedGameIds(formData);
+  } catch (featuredGamesError) {
+    redirect(`/events/${slug}/edit?error=${encodeURIComponent(featuredGamesError.message)}`);
+  }
+
+  let featuredGames = [];
+  if (featuredGamesEnabled) {
+    try {
+      featuredGames = await resolveFeaturedGames(supabase, featuredGameIds);
+    } catch (bggError) {
+      redirect(`/events/${slug}/edit?error=${encodeURIComponent(bggError.message)}`);
+    }
+  }
+
+  const { error } = await supabase
+    .from('events')
+    .update({
+      title,
+      description: String(formData.get('description') || '').trim() || null,
+      visibility: formData.get('visibility') || 'public',
+      starts_at: zonedInputToUtc(startsAtLocal, timezone).toISOString(),
+      ends_at: endsAtLocal ? zonedInputToUtc(endsAtLocal, timezone).toISOString() : null,
+      timezone,
+      venue_id: formData.get('venue_id') || null,
+      location_label: String(formData.get('location_label') || '').trim() || null,
+      neighborhood: String(formData.get('neighborhood') || '').trim() || null,
+      cross_streets: String(formData.get('cross_streets') || '').trim() || null,
+      city: String(formData.get('city') || '').trim() || null,
+      seat_limit: seatLimitRaw ? Number(seatLimitRaw) : null,
+      allow_waitlist: formData.get('allow_waitlist') === 'on',
+      featured_games_enabled: featuredGamesEnabled,
+    })
+    .eq('id', eventId);
+
+  if (error) {
+    redirect(`/events/${slug}/edit?error=${encodeURIComponent(error.message)}`);
+  }
+
+  const featuredGamesResult = featuredGamesEnabled
+    ? await supabase.rpc('set_event_featured_games', { _event: eventId, _games: featuredGames })
+    : await supabase.rpc('disable_event_featured_games', { _event: eventId });
+
+  if (featuredGamesResult.error) {
+    redirect(`/events/${slug}/edit?error=${encodeURIComponent(featuredGamesResult.error.message)}`);
+  }
+
+  revalidatePath(`/events/${slug}`);
+  revalidatePath(`/events/${slug}/manage`);
+  redirect(`/events/${slug}?updated=event`);
 }
 
 export async function rsvpToEvent(formData) {

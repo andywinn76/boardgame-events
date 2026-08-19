@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, ExternalLink, CalendarPlus, Settings, Users, MessageSquare, Flag } from 'lucide-react';
+import { MapPin, ExternalLink, CalendarPlus, Pencil, Settings, Users, MessageSquare, Flag } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { formatEventTime } from '@/lib/dates';
 import { venueMapUrl, coarseMapUrl } from '@/lib/maps';
@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default async function EventDetailPage({ params, searchParams }) {
   const { slug } = await params;
-  const { error, reported } = await searchParams;
+  const { error, reported, updated } = await searchParams;
   const supabase = await createClient();
 
   const { data: event } = await supabase
@@ -111,10 +111,16 @@ export default async function EventDetailPage({ params, searchParams }) {
             Add to calendar
           </a>
           {isHost && (
-            <Link href={`/events/${slug}/manage`} className="inline-flex items-center gap-1 underline underline-offset-2">
-              <Settings className="size-3.5" />
-              Manage
-            </Link>
+            <>
+              <Link href={`/events/${slug}/edit`} className="inline-flex items-center gap-1 underline underline-offset-2">
+                <Pencil className="size-3.5" />
+                Edit event
+              </Link>
+              <Link href={`/events/${slug}/manage`} className="inline-flex items-center gap-1 underline underline-offset-2">
+                <Settings className="size-3.5" />
+                Manage
+              </Link>
+            </>
           )}
         </p>
       </div>
@@ -122,6 +128,12 @@ export default async function EventDetailPage({ params, searchParams }) {
       {reported && (
         <Alert>
           <AlertDescription>Thanks — this event has been reported to the moderation team.</AlertDescription>
+        </Alert>
+      )}
+
+      {updated === 'event' && (
+        <Alert>
+          <AlertDescription>Your event has been updated.</AlertDescription>
         </Alert>
       )}
 

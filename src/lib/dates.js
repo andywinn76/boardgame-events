@@ -19,3 +19,7 @@ export function zonedInputToUtc(datetimeLocalValue, timeZone) {
 export function formatEventTime(isoString, timeZone, formatStr = 'EEE, MMM d, yyyy · h:mm a zzz') {
   return formatInTimeZone(new Date(isoString), timeZone, formatStr);
 }
+
+export function formatDateTimeInput(isoString, timeZone) {
+  return isoString ? formatInTimeZone(new Date(isoString), timeZone, "yyyy-MM-dd'T'HH:mm") : '';
+}

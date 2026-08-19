@@ -9,11 +9,11 @@ import { Button } from '@/components/ui/button';
 
 const MAX_FEATURED_GAMES = 5;
 
-export function FeaturedGamesPicker() {
-  const [enabled, setEnabled] = useState(false);
+export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] }) {
+  const [enabled, setEnabled] = useState(defaultEnabled);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
-  const [selected, setSelected] = useState([]);
+  const [selected, setSelected] = useState(initialGames);
   const [searching, setSearching] = useState(false);
   const [addingId, setAddingId] = useState(null);
   const [error, setError] = useState('');
