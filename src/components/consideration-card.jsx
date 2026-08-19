@@ -16,6 +16,12 @@ const VISIBILITY_LABEL = {
   public: 'Public',
 };
 
+const SEVERITY = {
+  1: { label: 'Mild', className: 'border-green-300 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-300' },
+  2: { label: 'Medium', className: 'border-yellow-300 bg-yellow-100 text-yellow-900 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-300' },
+  3: { label: 'Severe', className: 'border-red-300 bg-red-100 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-300' },
+};
+
 const selectClass =
   'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
 
@@ -61,7 +67,11 @@ export function ConsiderationCard({ consideration }) {
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               <Badge variant="secondary">{consideration.kind}</Badge>
               <Badge variant="outline">{VISIBILITY_LABEL[consideration.visibility]}</Badge>
-              {consideration.severity && <Badge variant="outline">severity {consideration.severity}</Badge>}
+              {consideration.severity && (
+                <Badge variant="outline" className={SEVERITY[consideration.severity].className}>
+                  {SEVERITY[consideration.severity].label}
+                </Badge>
+              )}
             </div>
             {consideration.details && <p className="mt-1.5 text-sm text-muted-foreground">{consideration.details}</p>}
           </div>
@@ -122,9 +132,9 @@ export function ConsiderationCard({ consideration }) {
                   className={selectClass}
                 >
                   <option value="">Not set</option>
-                  <option value="1">1 — mild</option>
-                  <option value="2">2 — moderate</option>
-                  <option value="3">3 — severe</option>
+                  <option value="1">Mild</option>
+                  <option value="2">Medium</option>
+                  <option value="3">Severe</option>
                 </select>
               </div>
             </div>

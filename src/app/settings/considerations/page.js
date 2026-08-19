@@ -34,6 +34,10 @@ export default async function ConsiderationsPage({ searchParams }) {
       <div>
         <h2 className="font-heading text-xl font-bold text-foreground">Considerations</h2>
         <p className="mt-1 text-sm text-muted-foreground">
+          Share accessibility, dietary, sensory, or other needs that can help make game night more
+          comfortable and welcoming for you.
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground/80">
           Each item has its own visibility. Hosts of events you&rsquo;ve RSVP&rsquo;d to only ever see an
           aggregated, de-duplicated summary — never a list tied to your name.
         </p>
@@ -79,13 +83,13 @@ export default async function ConsiderationsPage({ searchParams }) {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="severity">
-                  Severity <span className="font-normal text-muted-foreground">(optional, 1&ndash;3)</span>
+                  Severity <span className="font-normal text-muted-foreground">(optional)</span>
                 </Label>
                 <select id="severity" name="severity" defaultValue="" className={selectClass}>
                   <option value="">Not set</option>
-                  <option value="1">1 — mild</option>
-                  <option value="2">2 — moderate</option>
-                  <option value="3">3 — severe</option>
+                  <option value="1">Mild</option>
+                  <option value="2">Medium</option>
+                  <option value="3">Severe</option>
                 </select>
               </div>
             </div>

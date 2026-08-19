@@ -34,8 +34,9 @@ export default async function EventDetailPage({ params, searchParams }) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: seatCounts }, { data: myRsvp }, { data: venue }, { data: hostRow }] = await Promise.all([
+  const [{ data: seatCounts }, { data: attendeeNames }, { data: myRsvp }, { data: venue }, { data: hostRow }] = await Promise.all([
     supabase.from('event_seat_counts').select('seats_taken, seats_left').eq('event_id', event.id).single(),
+    supabase.rpc('event_attendee_names', { _event: event.id }),
     user
       ? supabase.from('rsvps').select('status').eq('event_id', event.id).eq('user_id', user.id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -178,6 +179,15 @@ export default async function EventDetailPage({ params, searchParams }) {
                   : `${seatsLeft} of ${event.seat_limit} seats left`
                 : 'Unlimited seats'}
             </p>
+            {attendeeNames?.length > 0 && (
+              <p className="text-muted-foreground">
+                {attendeeNames
+                  .map(({ attendee_name: attendeeName, is_organizer: isOrganizer }) =>
+                    isOrganizer ? `${attendeeName} (organizer)` : attendeeName
+                  )
+                  .join(', ')}
+              </p>
+            )}
             {event.seat_limit && (
               <p className="text-muted-foreground">{event.allow_waitlist ? 'Waitlist available once full' : 'No waitlist'}</p>
             )}
@@ -234,7 +244,7 @@ export default async function EventDetailPage({ params, searchParams }) {
             <form action={rsvpToEvent}>
               <input type="hidden" name="event_id" value={event.id} />
               <input type="hidden" name="slug" value={slug} />
-              <Button type="submit" size="lg" className="w-full">
+              <Button type="submit">
                 {isFull ? 'Join waitlist' : 'RSVP'}
               </Button>
             </form>
