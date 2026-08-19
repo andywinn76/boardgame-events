@@ -70,7 +70,12 @@ export default async function EventDetailPage({ params, searchParams }) {
     : { data: null };
 
   const preciseMapUrl = venueMapUrl(venue);
-  const fallbackMapUrl = coarseMapUrl({ crossStreets: event.cross_streets, city: event.city });
+  const fallbackMapUrl = coarseMapUrl({
+    locationLabel: event.location_label,
+    neighborhood: event.neighborhood,
+    crossStreets: event.cross_streets,
+    city: event.city,
+  });
   const mapUrl = preciseMapUrl || fallbackMapUrl;
 
   return (
@@ -112,7 +117,7 @@ export default async function EventDetailPage({ params, searchParams }) {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p className="text-foreground">
-              {event.location_label && <span className="block font-medium">{event.location_label}</span>}
+              {event.location_label && <span className="block text-[1.3125rem] font-semibold">{event.location_label}</span>}
               {[event.neighborhood, event.cross_streets, event.city].filter(Boolean).join(' · ')}
             </p>
 
@@ -166,6 +171,7 @@ export default async function EventDetailPage({ params, searchParams }) {
           <Users className="size-4 text-muted-foreground" />
           <div>
             <p className="text-foreground">
+              {seatCounts?.seats_taken || 0} attending ·{' '}
               {event.seat_limit
                 ? isFull
                   ? `Full — ${event.seat_limit} seats`
