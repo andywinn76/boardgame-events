@@ -39,6 +39,9 @@ yarn-error.log*
 # Supabase CLI local cache
 /supabase/.temp/
 
+# Local agent settings
+/.claude/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
