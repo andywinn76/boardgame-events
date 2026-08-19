@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Link from 'next/link';
-import { CalendarClock } from 'lucide-react';
+import { CalendarClock, Info } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { updatePreferences, regenerateIcsToken } from '../actions';
+import { updatePreferences, updateUsername, regenerateIcsToken } from '../actions';
 import { PageShell } from '@/components/page-shell';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -14,8 +14,37 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 const selectClass =
   'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
 
+const KM_TO_MILES = 0.621371;
+
+function milesFromKilometers(kilometers) {
+  if (kilometers == null) return '';
+  return Math.round(kilometers * KM_TO_MILES);
+}
+
+function WeightInfo({ id }) {
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        aria-label="What does board game weight mean?"
+        aria-describedby={id}
+        className="rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <Info className="size-4" />
+      </button>
+      <span
+        id={id}
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden w-64 -translate-x-1/2 rounded-lg bg-foreground px-3 py-2 text-xs font-normal leading-relaxed text-background shadow-lg group-hover:block group-focus-within:block"
+      >
+        Board game weight describes complexity: 1 is light and easy to learn, while 5 is highly complex with heavier rules and strategy.
+      </span>
+    </span>
+  );
+}
+
 export default async function PreferencesPage({ searchParams }) {
-  const { error } = await searchParams;
+  const { error, updated } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,7 +56,7 @@ export default async function PreferencesPage({ searchParams }) {
 
   const [{ data: prefs }, { data: profile }, headersList] = await Promise.all([
     supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle(),
-    supabase.from('profiles').select('ics_token').eq('id', user.id).single(),
+    supabase.from('profiles').select('username, ics_token').eq('id', user.id).single(),
     headers(),
   ]);
 
@@ -53,14 +82,53 @@ export default async function PreferencesPage({ searchParams }) {
         </Alert>
       )}
 
+      {updated === 'username' && (
+        <Alert>
+          <AlertDescription>Your username has been updated.</AlertDescription>
+        </Alert>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Profile</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form action={updateUsername} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                required
+                minLength={3}
+                maxLength={24}
+                pattern="[a-z0-9_]+"
+                defaultValue={profile?.username || ''}
+                aria-describedby="username-help"
+              />
+              <p id="username-help" className="text-xs text-muted-foreground">
+                3–24 lowercase letters, numbers, or underscores.
+              </p>
+            </div>
+            <Button type="submit" variant="outline">
+              Update username
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardContent>
           <form action={updatePreferences} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="preferred_weight_min">
-                  Weight min <span className="font-normal text-muted-foreground">(1&ndash;5)</span>
-                </Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="preferred_weight_min">
+                    Min. Weight <span className="font-normal text-muted-foreground">(1&ndash;5)</span>
+                  </Label>
+                  <WeightInfo id="min-weight-help" />
+                </div>
                 <Input
                   id="preferred_weight_min"
                   name="preferred_weight_min"
@@ -72,7 +140,10 @@ export default async function PreferencesPage({ searchParams }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="preferred_weight_max">Weight max</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="preferred_weight_max">Max. Weight</Label>
+                  <WeightInfo id="max-weight-help" />
+                </div>
                 <Input
                   id="preferred_weight_max"
                   name="preferred_weight_max"
@@ -100,7 +171,7 @@ export default async function PreferencesPage({ searchParams }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="preferred_player_min">Player count min</Label>
+                <Label htmlFor="preferred_player_min">Min. Player Count</Label>
                 <Input
                   id="preferred_player_min"
                   name="preferred_player_min"
@@ -110,7 +181,7 @@ export default async function PreferencesPage({ searchParams }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="preferred_player_max">Player count max</Label>
+                <Label htmlFor="preferred_player_max">Max. Player Count</Label>
                 <Input
                   id="preferred_player_max"
                   name="preferred_player_max"
@@ -122,15 +193,15 @@ export default async function PreferencesPage({ searchParams }) {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="travel_radius_km">
-                Travel radius <span className="font-normal text-muted-foreground">(km)</span>
+              <Label htmlFor="travel_radius_miles">
+                Travel radius <span className="font-normal text-muted-foreground">(miles)</span>
               </Label>
               <Input
-                id="travel_radius_km"
-                name="travel_radius_km"
+                id="travel_radius_miles"
+                name="travel_radius_miles"
                 type="number"
                 min="1"
-                defaultValue={prefs?.travel_radius_km ?? ''}
+                defaultValue={milesFromKilometers(prefs?.travel_radius_km)}
               />
             </div>
 
