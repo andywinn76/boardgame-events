@@ -24,6 +24,18 @@ export default async function SignupPage({ searchParams }) {
           )}
 
           <form action={signup} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="first_name">First name</Label>
+                <Input id="first_name" name="first_name" type="text" required maxLength={80} autoComplete="given-name" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="last_name">
+                  Last name <span className="font-normal text-muted-foreground">(optional)</span>
+                </Label>
+                <Input id="last_name" name="last_name" type="text" maxLength={80} autoComplete="family-name" />
+              </div>
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" required />

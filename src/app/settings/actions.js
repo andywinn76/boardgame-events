@@ -45,7 +45,7 @@ export async function updatePreferences(formData) {
   revalidatePath('/settings/preferences');
 }
 
-export async function updateUsername(formData) {
+export async function updateProfile(formData) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -56,13 +56,32 @@ export async function updateUsername(formData) {
   }
 
   const username = String(formData.get('username') || '').trim().toLowerCase();
+  const firstName = String(formData.get('first_name') || '').trim();
+  const lastName = String(formData.get('last_name') || '').trim();
+
   if (!/^[a-z0-9_]{3,24}$/.test(username)) {
     redirect(
       `/settings/preferences?error=${encodeURIComponent('Username must be 3–24 characters using only lowercase letters, numbers, and underscores.')}`
     );
   }
 
-  const { error } = await supabase.from('profiles').update({ username }).eq('id', user.id);
+  if (!firstName) {
+    redirect(`/settings/preferences?error=${encodeURIComponent('First name is required.')}`);
+  }
+
+  if (firstName.length > 80 || lastName.length > 80) {
+    redirect(`/settings/preferences?error=${encodeURIComponent('Names must be 80 characters or fewer.')}`);
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      username,
+      first_name: firstName,
+      last_name: lastName || null,
+      display_name: [firstName, lastName].filter(Boolean).join(' '),
+    })
+    .eq('id', user.id);
 
   if (error) {
     const message = error.code === '23505' ? 'That username is already taken.' : error.message;
@@ -70,7 +89,7 @@ export async function updateUsername(formData) {
   }
 
   revalidatePath('/', 'layout');
-  redirect('/settings/preferences?updated=username');
+  redirect('/settings/preferences?updated=profile');
 }
 
 export async function addConsideration(formData) {

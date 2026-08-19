@@ -32,12 +32,26 @@ export async function login(formData) {
 
 export async function signup(formData) {
   const supabase = await createClient();
+  const firstName = String(formData.get('first_name') || '').trim();
+  const lastName = String(formData.get('last_name') || '').trim();
+
+  if (!firstName) {
+    redirect(`/signup?error=${encodeURIComponent('First name is required.')}`);
+  }
+
+  if (firstName.length > 80 || lastName.length > 80) {
+    redirect(`/signup?error=${encodeURIComponent('Names must be 80 characters or fewer.')}`);
+  }
 
   const { error } = await supabase.auth.signUp({
     email: formData.get('email'),
     password: formData.get('password'),
     options: {
       emailRedirectTo: `${siteUrl}/callback`,
+      data: {
+        first_name: firstName,
+        last_name: lastName || null,
+      },
     },
   });
 

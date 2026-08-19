@@ -42,6 +42,8 @@ create type game_slot_status    as enum ('proposed','scheduled','played','droppe
 create table profiles (
   id           uuid primary key references auth.users on delete cascade,
   username     citext unique not null check (username ~ '^[a-z0-9_]{3,24}$'),
+  first_name   text,
+  last_name    text,
   display_name text,
   avatar_url   text,
   bio          text,

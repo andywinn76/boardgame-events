@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import { CalendarClock, Info } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { updatePreferences, updateUsername, regenerateIcsToken } from '../actions';
+import { updatePreferences, updateProfile, regenerateIcsToken } from '../actions';
 import { PageShell } from '@/components/page-shell';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -56,7 +56,7 @@ export default async function PreferencesPage({ searchParams }) {
 
   const [{ data: prefs }, { data: profile }, headersList] = await Promise.all([
     supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle(),
-    supabase.from('profiles').select('username, ics_token').eq('id', user.id).single(),
+    supabase.from('profiles').select('username, first_name, last_name, ics_token').eq('id', user.id).single(),
     headers(),
   ]);
 
@@ -82,9 +82,9 @@ export default async function PreferencesPage({ searchParams }) {
         </Alert>
       )}
 
-      {updated === 'username' && (
+      {updated === 'profile' && (
         <Alert>
-          <AlertDescription>Your username has been updated.</AlertDescription>
+          <AlertDescription>Your profile has been updated.</AlertDescription>
         </Alert>
       )}
 
@@ -93,7 +93,34 @@ export default async function PreferencesPage({ searchParams }) {
           <CardTitle className="text-lg">Profile</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={updateUsername} className="space-y-4">
+          <form action={updateProfile} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="first_name">First name</Label>
+                <Input
+                  id="first_name"
+                  name="first_name"
+                  type="text"
+                  required
+                  maxLength={80}
+                  autoComplete="given-name"
+                  defaultValue={profile?.first_name || ''}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="last_name">
+                  Last name <span className="font-normal text-muted-foreground">(optional)</span>
+                </Label>
+                <Input
+                  id="last_name"
+                  name="last_name"
+                  type="text"
+                  maxLength={80}
+                  autoComplete="family-name"
+                  defaultValue={profile?.last_name || ''}
+                />
+              </div>
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="username">Username</Label>
               <Input
@@ -112,7 +139,7 @@ export default async function PreferencesPage({ searchParams }) {
               </p>
             </div>
             <Button type="submit" variant="outline">
-              Update username
+              Update profile
             </Button>
           </form>
         </CardContent>
