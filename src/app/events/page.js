@@ -28,8 +28,8 @@ export default async function EventsPage() {
 
   return (
     <PageShell size="2xl">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="font-heading text-3xl font-bold text-foreground">Upcoming events</h1>
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="font-heading text-3xl font-bold text-foreground">Upcoming Events</h1>
         <div className="flex items-center gap-2">
           <Button nativeButton={false} variant="outline" render={<Link href="/events/calendar" />}>
             <CalendarDays />

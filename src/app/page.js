@@ -126,7 +126,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-background px-4 py-16">
+    <div className="flex flex-1 flex-col items-center bg-background px-4 pb-12 pt-8 sm:pt-10">
       <div className={cn('w-full space-y-8', user ? 'max-w-3xl' : 'max-w-lg')}>
         <div className="text-center">
           <Image
