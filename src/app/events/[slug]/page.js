@@ -145,6 +145,20 @@ export default async function EventDetailPage({ params, searchParams }) {
         </Alert>
       )}
 
+      {event.description && (
+        <Card className="bg-primary/5 ring-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg text-foreground">
+              <MessageSquare className="size-5 text-primary" />
+              About this event
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-wrap text-base leading-7 text-foreground">{event.description}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {(event.location_label || event.neighborhood || event.cross_streets || event.city) && (
         <Card>
           <CardHeader>
@@ -201,8 +215,6 @@ export default async function EventDetailPage({ params, searchParams }) {
           </CardContent>
         </Card>
       )}
-
-      {event.description && <p className="whitespace-pre-wrap text-foreground">{event.description}</p>}
 
       {event.featured_games_enabled && featuredGames?.length > 0 && (
         <section className="space-y-3">
