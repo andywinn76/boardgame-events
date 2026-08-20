@@ -140,6 +140,7 @@ export async function addConsideration(formData) {
   }
 
   revalidatePath('/settings/considerations');
+  redirect('/settings/considerations');
 }
 
 export async function deleteConsideration(formData) {

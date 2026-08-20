@@ -14,7 +14,7 @@ export function zonedInputToUtc(datetimeLocalValue, timeZone) {
   return fromZonedTime(datetimeLocalValue, timeZone);
 }
 
-// Always render in the event's own timezone, never the viewer's — a 7pm game
+// Always render in the event's own timezone, never the viewer's. A 7pm game
 // night is 7pm local no matter who's looking.
 export function formatEventTime(isoString, timeZone, formatStr = 'EEE, MMM d, yyyy · h:mm a zzz') {
   return formatInTimeZone(new Date(isoString), timeZone, formatStr);

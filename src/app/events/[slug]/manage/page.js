@@ -207,7 +207,7 @@ export default async function ManageEventPage({ params, searchParams }) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="mb-3 text-xs text-muted-foreground">Aggregated across the confirmed roster — never tied to a name.</p>
+          <p className="mb-3 text-xs text-muted-foreground">Aggregated across the confirmed roster and never tied to a name.</p>
 
           {!digest?.length ? (
             <p className="text-sm text-muted-foreground">Nothing shared yet.</p>

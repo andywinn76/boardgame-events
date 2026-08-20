@@ -222,7 +222,7 @@ export default async function PreferencesPage({ searchParams }) {
                 defaultValue={prefs?.default_share_scope || 'hosts_only'}
                 className={selectClass}
               >
-                <option value="private">Private — just me</option>
+                <option value="private">Private: just me</option>
                 <option value="hosts_only">Hosts only</option>
                 <option value="attendees">Attendees of shared events</option>
                 <option value="public">Public</option>

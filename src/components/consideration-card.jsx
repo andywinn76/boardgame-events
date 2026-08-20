@@ -10,10 +10,20 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 const VISIBILITY_LABEL = {
-  private: 'Private — just me',
+  private: 'Private: just me',
   hosts_only: 'Hosts only',
   attendees: 'Attendees of shared events',
   public: 'Public',
+};
+
+const KIND_LABEL = {
+  vision: 'Vision',
+  hearing: 'Hearing',
+  mobility: 'Mobility',
+  allergy: 'Allergy',
+  dietary: 'Dietary',
+  sensory: 'Sensory',
+  other: 'Other',
 };
 
 const SEVERITY = {
@@ -27,6 +37,12 @@ const selectClass =
 
 const iconButtonClass =
   'inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+
+const severitySelectStyle = {
+  '1': { backgroundColor: '#dcfce7', color: '#166534' },
+  '2': { backgroundColor: '#fef9c3', color: '#713f12' },
+  '3': { backgroundColor: '#fee2e2', color: '#991b1b' },
+};
 
 export function ConsiderationCard({ consideration }) {
   const [editing, setEditing] = useState(false);
@@ -63,9 +79,9 @@ export function ConsiderationCard({ consideration }) {
       <CardContent className="space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-medium text-foreground">{consideration.label}</p>
+            <p className="text-base font-semibold text-foreground">{consideration.label}</p>
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              <Badge variant="secondary">{consideration.kind}</Badge>
+              <Badge variant="secondary">{KIND_LABEL[consideration.kind] || consideration.kind}</Badge>
               <Badge variant="outline">{VISIBILITY_LABEL[consideration.visibility]}</Badge>
               {consideration.severity && (
                 <Badge variant="outline" className={SEVERITY[consideration.severity].className}>
@@ -130,11 +146,12 @@ export function ConsiderationCard({ consideration }) {
                   value={draft.severity}
                   onChange={(event) => setDraft((value) => ({ ...value, severity: event.target.value }))}
                   className={selectClass}
+                  style={severitySelectStyle[draft.severity]}
                 >
                   <option value="">Not set</option>
-                  <option value="1">Mild</option>
-                  <option value="2">Medium</option>
-                  <option value="3">Severe</option>
+                  <option value="1" className="bg-green-100 text-green-800">Mild</option>
+                  <option value="2" className="bg-yellow-100 text-yellow-900">Medium</option>
+                  <option value="3" className="bg-red-100 text-red-800">Severe</option>
                 </select>
               </div>
             </div>
@@ -166,7 +183,7 @@ export function ConsiderationCard({ consideration }) {
                 onChange={(event) => setDraft((value) => ({ ...value, visibility: event.target.value }))}
                 className={selectClass}
               >
-                <option value="private">Private — just me</option>
+                <option value="private">Private: just me</option>
                 <option value="hosts_only">Hosts only</option>
                 <option value="attendees">Attendees of shared events</option>
                 <option value="public">Public</option>

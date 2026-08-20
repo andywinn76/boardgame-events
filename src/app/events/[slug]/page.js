@@ -138,7 +138,7 @@ export default async function EventDetailPage({ params, searchParams }) {
 
       {reported && (
         <Alert>
-          <AlertDescription>Thanks — this event has been reported to the moderation team.</AlertDescription>
+          <AlertDescription>Thanks. This event has been reported to the moderation team.</AlertDescription>
         </Alert>
       )}
 
@@ -271,7 +271,7 @@ export default async function EventDetailPage({ params, searchParams }) {
               {seatCounts?.seats_taken || 0} attending ·{' '}
               {event.seat_limit
                 ? isFull
-                  ? `Full — ${event.seat_limit} seats`
+                  ? `Full: ${event.seat_limit} seats`
                   : `${seatsLeft} of ${event.seat_limit} seats left`
                 : 'Unlimited seats'}
             </p>

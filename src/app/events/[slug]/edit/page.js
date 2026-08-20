@@ -133,7 +133,7 @@ export default async function EditEventPage({ params, searchParams }) {
           <div className="space-y-1.5">
             <Label htmlFor="venue_id">Saved venue</Label>
             <select id="venue_id" name="venue_id" defaultValue={event.venue_id || ''} className={selectClass}>
-              <option value="">No saved venue — use the general location fields</option>
+              <option value="">No saved venue. Use the general location fields</option>
               {(venues || []).map((venue) => (
                 <option key={venue.id} value={venue.id}>
                   {venue.name}{venue.city ? ` · ${venue.city}` : ''}
@@ -183,8 +183,8 @@ export default async function EditEventPage({ params, searchParams }) {
         <div className="space-y-1.5">
           <Label htmlFor="visibility">Visibility</Label>
           <select id="visibility" name="visibility" defaultValue={event.visibility} className={selectClass}>
-            <option value="public">Public — anyone can find it</option>
-            <option value="unlisted">Unlisted — only people with the link</option>
+            <option value="public">Public: anyone can find it</option>
+            <option value="unlisted">Unlisted: only people with the link</option>
             <option value="invite_only">Invite only</option>
           </select>
         </div>

@@ -89,7 +89,7 @@ export default async function NewEventPage({ searchParams }) {
             <div className="space-y-1.5">
               <Label htmlFor="venue_id">Saved venue</Label>
               <select id="venue_id" name="venue_id" defaultValue="" className={selectClass}>
-                <option value="">None — describe the location below</option>
+                <option value="">None. Describe the location below</option>
                 {sharedVenues.map((venue) => (
                   <option key={venue.id} value={venue.id}>
                     {venue.name}
@@ -105,7 +105,7 @@ export default async function NewEventPage({ searchParams }) {
             <div className="mt-3 space-y-4">
               <p className="text-xs text-muted-foreground">
                 Ignored if a saved venue is selected above. The exact address here is only ever shown to
-                hosts and people who&rsquo;ve RSVP&rsquo;d — everyone else sees just the neighborhood and
+                hosts and people who&rsquo;ve RSVP&rsquo;d. Everyone else sees just the neighborhood and
                 cross streets.
               </p>
               <div className="space-y-1.5">
@@ -191,7 +191,7 @@ export default async function NewEventPage({ searchParams }) {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="new_venue_access_notes">
-                  Access notes <span className="font-normal text-muted-foreground">(parking, buzzer code — attendees only)</span>
+                  Access notes <span className="font-normal text-muted-foreground">(parking, buzzer code; attendees only)</span>
                 </Label>
                 <Input id="new_venue_access_notes" name="new_venue_access_notes" type="text" />
               </div>
@@ -250,8 +250,8 @@ export default async function NewEventPage({ searchParams }) {
         <div className="space-y-1.5">
           <Label htmlFor="visibility">Visibility</Label>
           <select id="visibility" name="visibility" defaultValue="public" className={selectClass}>
-            <option value="public">Public — anyone can find it</option>
-            <option value="unlisted">Unlisted — only people with the link</option>
+            <option value="public">Public: anyone can find it</option>
+            <option value="unlisted">Unlisted: only people with the link</option>
             <option value="invite_only">Invite only</option>
           </select>
         </div>

@@ -50,7 +50,7 @@ export default async function SignupPage({ searchParams }) {
           </form>
 
           <p className="text-sm text-muted-foreground">
-            You&apos;ll get a placeholder username to start — set your real one from settings after you
+            You&apos;ll get a placeholder username to start. Set your real one from settings after you
             confirm your email.
           </p>
 
