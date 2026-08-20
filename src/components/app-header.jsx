@@ -3,6 +3,7 @@ import { Bell, CalendarDays, Home, LogIn, Settings } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { logout } from '@/app/(auth)/actions';
 import { Button } from '@/components/ui/button';
+import { HeaderBrand } from '@/components/header-brand';
 
 export async function AppHeader() {
   const supabase = await createClient();
@@ -12,29 +13,27 @@ export async function AppHeader() {
 
   return (
     <header className="border-b border-border bg-card/80">
-      <nav className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3" aria-label="Main navigation">
-        <Link href="/" className="font-heading text-lg font-bold text-foreground">
-          Board Game Events
-        </Link>
+      <nav className="mx-auto flex w-full max-w-5xl items-center justify-between gap-2 px-3 py-2.5 sm:px-4 sm:py-3" aria-label="Main navigation">
+        <HeaderBrand />
 
-        <div className="flex flex-wrap items-center justify-end gap-1">
-          <Button nativeButton={false} variant="ghost" size="sm" render={<Link href="/" />}>
+        <div className="ml-auto flex items-center justify-end gap-0.5 sm:gap-1">
+          <Button nativeButton={false} variant="ghost" size="sm" aria-label="Home" render={<Link href="/" />}>
             <Home />
-            Home
+            <span className="hidden sm:inline">Home</span>
           </Button>
-          <Button nativeButton={false} variant="ghost" size="sm" render={<Link href="/events" />}>
+          <Button nativeButton={false} variant="ghost" size="sm" aria-label="Events" render={<Link href="/events" />}>
             <CalendarDays />
-            Events
+            <span className="hidden sm:inline">Events</span>
           </Button>
           {user ? (
             <>
-              <Button nativeButton={false} variant="ghost" size="sm" render={<Link href="/notifications" />}>
+              <Button nativeButton={false} variant="ghost" size="sm" aria-label="Notifications" render={<Link href="/notifications" />}>
                 <Bell />
-                Notifications
+                <span className="hidden sm:inline">Notifications</span>
               </Button>
-              <Button nativeButton={false} variant="ghost" size="sm" render={<Link href="/settings/preferences" />}>
+              <Button nativeButton={false} variant="ghost" size="sm" aria-label="Settings" render={<Link href="/settings/preferences" />}>
                 <Settings />
-                Settings
+                <span className="hidden sm:inline">Settings</span>
               </Button>
               <form action={logout}>
                 <Button type="submit" variant="outline" size="sm">
