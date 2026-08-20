@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CalendarMenu } from '@/components/calendar-menu';
 import { eventCalendarLinks } from '@/lib/calendar-links';
 import { headers } from 'next/headers';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export default async function EventDetailPage({ params, searchParams }) {
   const { slug } = await params;
@@ -85,7 +86,7 @@ export default async function EventDetailPage({ params, searchParams }) {
   const { data: messages } = onRoster
     ? await supabase
         .from('event_messages')
-        .select('id, body, created_at, profiles(username, display_name)')
+        .select('id, body, created_at, profiles(id, username, display_name)')
         .eq('event_id', event.id)
         .order('created_at', { ascending: true })
     : { data: null };
@@ -367,8 +368,16 @@ export default async function EventDetailPage({ params, searchParams }) {
               <ul className="space-y-3">
                 {messages.map((m) => (
                   <li key={m.id} className="text-sm">
-                    <span className="font-medium text-foreground">{m.profiles?.display_name || m.profiles?.username}</span>{' '}
-                    <span className="text-muted-foreground">{m.body}</span>
+                    <p>
+                      <span className={`font-semibold ${m.profiles?.id === user.id ? 'text-primary' : 'text-foreground'}`}>
+                        {m.profiles?.display_name || m.profiles?.username}
+                      </span>{' '}
+                      <span className="text-[0.6875rem] text-muted-foreground/60">
+                        • ( <time dateTime={m.created_at}>{formatInTimeZone(new Date(m.created_at), event.timezone, 'M/d/yy, h:mmaaa')}</time> )
+                      </span>
+                      <span className="text-foreground">:</span>{' '}
+                      <span className="text-muted-foreground">{m.body}</span>
+                    </p>
                   </li>
                 ))}
               </ul>
