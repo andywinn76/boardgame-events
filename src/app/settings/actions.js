@@ -13,6 +13,10 @@ function milesToKilometers(value) {
   return miles == null ? null : Math.round(miles * 1.609344);
 }
 
+function profileResult(status, message) {
+  return { status, message, noticeId: crypto.randomUUID() };
+}
+
 export async function updatePreferences(formData) {
   const supabase = await createClient();
   const {
@@ -64,26 +68,23 @@ export async function updateProfile(_previousState, formData) {
   const gamesNoThanks = String(formData.get('games_no_thanks') || '').trim();
 
   if (!/^[a-z0-9_]{3,24}$/.test(username)) {
-    return {
-      status: 'error',
-      message: 'Username must be 3–24 characters using only lowercase letters, numbers, and underscores.',
-    };
+    return profileResult('error', 'Username must be 3–24 characters using only lowercase letters, numbers, and underscores.');
   }
 
   if (!firstName) {
-    return { status: 'error', message: 'First name is required.' };
+    return profileResult('error', 'First name is required.');
   }
 
   if (firstName.length > 80 || lastName.length > 80) {
-    return { status: 'error', message: 'Names must be 80 characters or fewer.' };
+    return profileResult('error', 'Names must be 80 characters or fewer.');
   }
 
   if (preferredPronouns.length > 80) {
-    return { status: 'error', message: 'Preferred pronouns must be 80 characters or fewer.' };
+    return profileResult('error', 'Preferred pronouns must be 80 characters or fewer.');
   }
 
   if (bio.length > 1000 || gamesYesPlease.length > 1000 || gamesNoThanks.length > 1000) {
-    return { status: 'error', message: 'About Me and game preference fields must be 1,000 characters or fewer.' };
+    return profileResult('error', 'About Me and game preference fields must be 1,000 characters or fewer.');
   }
 
   const { error } = await supabase
@@ -102,11 +103,11 @@ export async function updateProfile(_previousState, formData) {
 
   if (error) {
     const message = error.code === '23505' ? 'That username is already taken.' : error.message;
-    return { status: 'error', message };
+    return profileResult('error', message);
   }
 
   revalidatePath('/', 'layout');
-  return { status: 'success', message: 'Your profile has been updated.' };
+  return profileResult('success', 'Your profile has been updated.');
 }
 
 export async function addConsideration(formData) {

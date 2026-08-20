@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Bell, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { logout } from './(auth)/actions';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -15,16 +15,13 @@ export default async function Home() {
   } = await supabase.auth.getUser();
 
   let profile = null;
-  let unreadCount = 0;
   let isAdmin = false;
   if (user) {
-    const [{ data }, { count }, { data: adminRole }] = await Promise.all([
+    const [{ data }, { data: adminRole }] = await Promise.all([
       supabase.from('profiles').select('username, display_name').eq('id', user.id).single(),
-      supabase.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null),
       supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle(),
     ]);
     profile = data;
-    unreadCount = count || 0;
     isAdmin = Boolean(adminRole);
   }
 
@@ -65,23 +62,24 @@ export default async function Home() {
               </div>
 
               <div className="flex flex-wrap gap-2 pt-1">
-                <Badge variant="secondary" render={<Link href="/notifications" />}>
-                  <Bell />
-                  Notifications{unreadCount > 0 ? ` (${unreadCount})` : ''}
-                </Badge>
-                <Badge variant="secondary" render={<Link href="/settings/preferences" />}>
+                <Link href="/settings/preferences" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
                   Preferences
-                </Badge>
-                <Badge variant="secondary" render={<Link href="/settings/considerations" />}>
+                </Link>
+                <Link href="/settings/profile" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+                  Profile
+                </Link>
+                <Link href="/settings/considerations" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
                   Considerations
-                </Badge>
-                {isAdmin && (
+                </Link>
+              </div>
+              {isAdmin && (
+                <div>
                   <Badge variant="secondary" render={<Link href="/admin" />}>
                     <Sparkles />
                     Admin
                   </Badge>
-                )}
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : (

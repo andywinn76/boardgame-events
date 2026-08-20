@@ -71,7 +71,7 @@ export default async function PreferencesPage({ searchParams }) {
       )}
 
       <Card>
-        <CardHeader>
+        <CardHeader className="gap-4">
           <CardTitle className="text-lg">Gaming Preferences</CardTitle>
           <CardDescription>
             Optional hints hosts can use to suggest games and events you&rsquo;ll like.
@@ -238,7 +238,7 @@ export default async function PreferencesPage({ searchParams }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <CardTitle className="flex items-center gap-1.5 text-lg text-foreground">
             <CalendarClock className="size-4" />
             Calendar feed
           </CardTitle>

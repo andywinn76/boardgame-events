@@ -1,14 +1,15 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import { updateProfile } from '@/app/settings/actions';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
 
-const initialState = { status: 'idle', message: '' };
+const initialState = { status: 'idle', message: '', noticeId: null };
 
 export function ProfileForm({ profile }) {
   const [state, formAction, pending] = useActionState(updateProfile, initialState);
@@ -19,21 +20,61 @@ export function ProfileForm({ profile }) {
   const [bio, setBio] = useState(profile?.bio || '');
   const [gamesYesPlease, setGamesYesPlease] = useState(profile?.games_yes_please || '');
   const [gamesNoThanks, setGamesNoThanks] = useState(profile?.games_no_thanks || '');
+  const [dismissedNoticeId, setDismissedNoticeId] = useState(null);
+  const [fadingNoticeId, setFadingNoticeId] = useState(null);
+  const noticeVisible = state.status !== 'idle' && state.noticeId !== dismissedNoticeId;
+  const noticeFading = state.noticeId === fadingNoticeId;
+
+  useEffect(() => {
+    if (!state.noticeId) return;
+
+    const noticeId = state.noticeId;
+    const fadeTimer = window.setTimeout(() => setFadingNoticeId(noticeId), 4500);
+    const hideTimer = window.setTimeout(() => setDismissedNoticeId(noticeId), 5000);
+
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, [state.noticeId]);
+
+  function dismissNotice() {
+    setFadingNoticeId(state.noticeId);
+    window.setTimeout(() => setDismissedNoticeId(state.noticeId), 200);
+  }
 
   return (
     <>
-      {state.status === 'error' && (
-        <Alert variant="destructive">
-          <AlertDescription>{state.message}</AlertDescription>
-        </Alert>
-      )}
-      {state.status === 'success' && (
-        <Alert>
-          <AlertDescription>{state.message}</AlertDescription>
+      {noticeVisible && state.status !== 'idle' && (
+        <Alert
+          variant={state.status === 'error' ? 'destructive' : 'default'}
+          className={`transition-opacity duration-500 ${noticeFading ? 'opacity-0' : 'opacity-100'} ${
+            state.status === 'success'
+              ? 'border-green-300 bg-green-100 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-200'
+              : ''
+          }`}
+        >
+          <AlertDescription
+            className={`px-8 text-center ${
+              state.status === 'success' ? 'text-green-900 dark:text-green-200' : ''
+            }`}
+          >
+            {state.message}
+          </AlertDescription>
+          <AlertAction>
+            <button
+              type="button"
+              aria-label="Dismiss notification"
+              onClick={dismissNotice}
+              className="inline-flex size-6 items-center justify-center rounded-md text-current/70 hover:bg-black/5 hover:text-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-white/10"
+            >
+              <X className="size-4" />
+            </button>
+          </AlertAction>
         </Alert>
       )}
 
-      <form action={formAction} className="space-y-4">
+      <form action={formAction} className={`${noticeVisible ? 'mt-4 ' : ''}space-y-4`}>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="first_name">First name</Label>

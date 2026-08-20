@@ -63,7 +63,7 @@ export default async function ConsiderationsPage({ searchParams }) {
       <Card>
         <CardContent>
           <details className="group" open={Boolean(error)}>
-            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between text-base font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
               Add a consideration
               <Plus className="size-4 text-muted-foreground transition-transform group-open:rotate-45" />
             </summary>

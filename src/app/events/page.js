@@ -1,19 +1,30 @@
 import Link from 'next/link';
-import { CalendarDays, Plus, MapPin, Users } from 'lucide-react';
+import { CalendarDays, Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { formatEventTime } from '@/lib/dates';
 import { PageShell } from '@/components/page-shell';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { EventBrowser } from '@/components/event-browser';
 
 export default async function EventsPage() {
   const supabase = await createClient();
   const { data: events } = await supabase
     .from('events')
-    .select('id, slug, title, starts_at, timezone, location_label, city, seat_limit')
+    .select('id, slug, title, starts_at, timezone, location_label, city, seat_limit, approx_lat, approx_lng')
     .eq('status', 'published')
     .gte('starts_at', new Date().toISOString())
     .order('starts_at', { ascending: true });
+
+  const eventIds = (events || []).map((event) => event.id);
+  const { data: seatCounts } = eventIds.length
+    ? await supabase.from('event_seat_counts').select('event_id, seats_left').in('event_id', eventIds)
+    : { data: [] };
+  const seatsByEvent = new Map((seatCounts || []).map((row) => [row.event_id, row.seats_left]));
+  const browserEvents = (events || []).map((event) => ({
+    ...event,
+    seats_left: seatsByEvent.get(event.id) ?? event.seat_limit,
+    formatted_time: formatEventTime(event.starts_at, event.timezone),
+  }));
 
   return (
     <PageShell size="2xl">
@@ -31,42 +42,7 @@ export default async function EventsPage() {
         </div>
       </div>
 
-      {!events?.length ? (
-        <Card className="items-center px-6 py-10 text-center">
-          <p className="text-muted-foreground">
-            No upcoming events yet.{' '}
-            <Link href="/events/new" className="font-medium text-foreground underline underline-offset-2">
-              Host the first one
-            </Link>
-            .
-          </p>
-        </Card>
-      ) : (
-        <ul className="space-y-3">
-          {events.map((event) => (
-            <li key={event.id}>
-              <Card className="transition-colors hover:border-primary/40">
-                <Link href={`/events/${event.slug}`} className="block px-(--card-spacing)">
-                  <p className="font-heading text-lg font-semibold text-foreground">{event.title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{formatEventTime(event.starts_at, event.timezone)}</p>
-                  {(event.location_label || event.city) && (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <MapPin className="size-3.5 shrink-0" />
-                      {[event.location_label, event.city].filter(Boolean).join(' · ')}
-                    </p>
-                  )}
-                  {event.seat_limit && (
-                    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground/80">
-                      <Users className="size-3.5 shrink-0" />
-                      {event.seat_limit} seats
-                    </p>
-                  )}
-                </Link>
-              </Card>
-            </li>
-          ))}
-        </ul>
-      )}
+      <EventBrowser events={browserEvents} />
     </PageShell>
   );
 }
