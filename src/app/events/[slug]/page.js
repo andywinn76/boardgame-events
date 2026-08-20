@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, ExternalLink, CalendarPlus, Pencil, Settings, Users, MessageSquare, Flag } from 'lucide-react';
+import { MapPin, ExternalLink, Pencil, Settings, Users, MessageSquare, Flag } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { formatEventTime } from '@/lib/dates';
 import { venueMapUrl, coarseMapUrl } from '@/lib/maps';
@@ -11,6 +11,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CalendarMenu } from '@/components/calendar-menu';
+import { eventCalendarLinks } from '@/lib/calendar-links';
+import { headers } from 'next/headers';
 
 export default async function EventDetailPage({ params, searchParams }) {
   const { slug } = await params;
@@ -95,6 +98,17 @@ export default async function EventDetailPage({ params, searchParams }) {
     city: event.city,
   });
   const mapUrl = preciseMapUrl || fallbackMapUrl;
+  const headersList = await headers();
+  const hostName = headersList.get('host');
+  const protocol = hostName?.startsWith('localhost') ? 'http' : 'https';
+  const baseUrl = `${protocol}://${hostName}`;
+  const eventUrl = `${baseUrl}/events/${slug}`;
+  const calendarLinks = eventCalendarLinks({
+    event,
+    venue,
+    eventUrl,
+    icsUrl: `${baseUrl}/api/ics/${event.id}`,
+  });
 
   return (
     <PageShell size="2xl">
@@ -104,12 +118,9 @@ export default async function EventDetailPage({ params, searchParams }) {
           {formatEventTime(event.starts_at, event.timezone)}
           {event.ends_at ? ` – ${formatEventTime(event.ends_at, event.timezone, 'h:mm a zzz')}` : ''}
         </p>
-        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
           <span>Hosted by {host?.display_name || host?.username || 'a member'}</span>
-          <a href={`/api/ics/${event.id}`} className="inline-flex items-center gap-1 underline underline-offset-2">
-            <CalendarPlus className="size-3.5" />
-            Add to calendar
-          </a>
+          <CalendarMenu links={calendarLinks} />
           {isHost && (
             <>
               <Link href={`/events/${slug}/edit`} className="inline-flex items-center gap-1 underline underline-offset-2">
@@ -122,7 +133,7 @@ export default async function EventDetailPage({ params, searchParams }) {
               </Link>
             </>
           )}
-        </p>
+        </div>
       </div>
 
       {reported && (

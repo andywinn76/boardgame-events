@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CalendarFeedControls } from '@/components/calendar-feed-controls';
 
 const selectClass =
   'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
@@ -243,15 +244,28 @@ export default async function PreferencesPage({ searchParams }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Subscribe in Google/Apple/Outlook to keep your RSVPs synced automatically.
+          <p className="text-sm text-muted-foreground">
+            Subscribe once to keep events you&rsquo;re attending or organizing in a separate, personal calendar. This feed never includes every event on the platform.
           </p>
-          <Input readOnly defaultValue={feedUrl} className="text-xs text-muted-foreground" />
-          <form action={regenerateIcsToken}>
-            <Button type="submit" size="sm">
-              Regenerate link
-            </Button>
-          </form>
+          <CalendarFeedControls feedUrl={feedUrl} />
+          <div className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
+            <p className="font-medium text-foreground">Google Calendar</p>
+            <p className="mt-1">On a computer, open Google Calendar, then choose Other calendars → + → From URL and paste your personal URL.</p>
+            <p className="mt-2">Google controls refresh timing, so event changes may take a while to appear.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <a href={`webcal://${feedUrl.replace(/^https?:\/\//, '')}`} className="text-sm font-medium text-primary underline underline-offset-2">
+              Subscribe in Apple Calendar
+            </a>
+            <form action={regenerateIcsToken}>
+              <Button type="submit" size="sm" variant="outline">
+                Regenerate private URL
+              </Button>
+            </form>
+          </div>
+          <p className="text-xs text-muted-foreground/80">
+            Keep this URL private. Anyone who has it can view your calendar feed; regenerating it disables the previous URL.
+          </p>
         </CardContent>
       </Card>
     </>

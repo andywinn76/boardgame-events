@@ -29,7 +29,7 @@ function utcStamp(isoString) {
 // Prefers the exact venue address; falls back to the event's coarse public fields
 // (docs/architecture.md "Two-layer location") -- `venue` is only non-null here when
 // RLS actually resolved it for the caller, so this never leaks a gated address.
-function locationText(event, venue) {
+export function locationText(event, venue) {
   if (venue?.address_line1) {
     return [venue.address_line1, venue.address_line2, [venue.city, venue.region, venue.postal_code].filter(Boolean).join(', ')]
       .filter(Boolean)
@@ -75,12 +75,13 @@ export function buildVEvent({ event, venue, baseUrl }) {
   return lines;
 }
 
-export function buildVCalendar(vevents) {
+export function buildVCalendar(vevents, { name } = {}) {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//boardgame-events//EN',
     'CALSCALE:GREGORIAN',
+    ...(name ? [`X-WR-CALNAME:${escapeText(name)}`] : []),
     ...vevents.flat(),
     'END:VCALENDAR',
   ];

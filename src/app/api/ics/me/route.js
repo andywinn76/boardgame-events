@@ -36,12 +36,13 @@ export async function GET(request) {
     })
   );
 
-  const ics = buildVCalendar(vevents);
+  const ics = buildVCalendar(vevents, { name: 'My Board Game Events' });
 
   return new Response(ics, {
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': 'attachment; filename="my-events.ics"',
+      'Content-Disposition': 'inline; filename="my-board-game-events.ics"',
+      'Cache-Control': 'private, no-store',
     },
   });
 }
