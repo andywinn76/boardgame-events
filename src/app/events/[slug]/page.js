@@ -47,8 +47,10 @@ export default async function EventDetailPage({ params, searchParams }) {
     { data: venue },
     { data: hostRow },
   ] = await Promise.all([
-    supabase.from('event_seat_counts').select('seats_taken, seats_left').eq('event_id', event.id).single(),
-    supabase.rpc('event_attendee_names', { _event: event.id }),
+    supabase.rpc('event_seat_count', { _event: event.id }).single(),
+    user
+      ? supabase.rpc('event_attendee_names', { _event: event.id })
+      : Promise.resolve({ data: [] }),
     event.featured_games_enabled
       ? supabase
           .from('event_games')
@@ -61,14 +63,8 @@ export default async function EventDetailPage({ params, searchParams }) {
     user
       ? supabase.from('rsvps').select('status').eq('event_id', event.id).eq('user_id', user.id).maybeSingle()
       : Promise.resolve({ data: null }),
-    // RLS-gated: only resolves for public venues, or private residences the
-    // caller hosts or has RSVP'd to (docs/architecture.md "Two-layer location").
     event.venue_id
-      ? supabase
-          .from('venues')
-          .select('name, address_line1, address_line2, city, region, postal_code, access_notes, website, lat, lng, google_place_id')
-          .eq('id', event.venue_id)
-          .maybeSingle()
+      ? supabase.rpc('event_venue_details', { _event: event.id }).maybeSingle()
       : Promise.resolve({ data: null }),
     user
       ? supabase.from('event_hosts').select('role').eq('event_id', event.id).eq('user_id', user.id).maybeSingle()
@@ -373,7 +369,7 @@ export default async function EventDetailPage({ params, searchParams }) {
                         {m.profiles?.display_name || m.profiles?.username}
                       </span>{' '}
                       <span className="text-[0.6875rem] text-muted-foreground/60">
-                        • ( <time dateTime={m.created_at}>{formatInTimeZone(new Date(m.created_at), event.timezone, 'M/d/yy, h:mmaaa')}</time> )
+                        • <time dateTime={m.created_at}>{formatInTimeZone(new Date(m.created_at), event.timezone, 'M/d/yy, h:mmaaa')}</time>
                       </span>
                       <span className="text-foreground">:</span>{' '}
                       <span className="text-muted-foreground">{m.body}</span>

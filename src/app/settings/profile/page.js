@@ -13,11 +13,7 @@ export default async function ProfilePage() {
     redirect('/login');
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('username, first_name, last_name, preferred_pronouns, bio, games_yes_please, games_no_thanks')
-    .eq('id', user.id)
-    .single();
+  const { data: profile } = await supabase.rpc('get_my_profile').single();
 
   return (
     <Card>

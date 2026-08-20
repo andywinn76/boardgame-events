@@ -217,9 +217,11 @@ export async function regenerateIcsToken() {
     redirect('/login');
   }
 
-  const token = crypto.randomUUID().replace(/-/g, '');
+  const { error } = await supabase.rpc('rotate_my_ics_token');
 
-  await supabase.from('profiles').update({ ics_token: token }).eq('id', user.id);
+  if (error) {
+    redirect(`/settings/preferences?error=${encodeURIComponent(error.message)}`);
+  }
 
   revalidatePath('/settings/preferences');
 }

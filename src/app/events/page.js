@@ -17,7 +17,7 @@ export default async function EventsPage() {
 
   const eventIds = (events || []).map((event) => event.id);
   const { data: seatCounts } = eventIds.length
-    ? await supabase.from('event_seat_counts').select('event_id, seats_left').in('event_id', eventIds)
+    ? await supabase.rpc('event_seat_counts_for', { _events: eventIds })
     : { data: [] };
   const seatsByEvent = new Map((seatCounts || []).map((row) => [row.event_id, row.seats_left]));
   const browserEvents = (events || []).map((event) => ({

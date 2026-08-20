@@ -79,7 +79,7 @@ export default async function ManageEventPage({ params, searchParams }) {
     { data: hosts },
     { data: invites },
   ] = await Promise.all([
-    supabase.from('event_seat_counts').select('seats_taken, seats_left').eq('event_id', event.id).single(),
+    supabase.rpc('event_seat_count', { _event: event.id }).single(),
     // Pre-aggregated by event_considerations_digest() -- never the raw per-person rows.
     supabase.rpc('event_considerations_digest', { _event: event.id }),
     supabase

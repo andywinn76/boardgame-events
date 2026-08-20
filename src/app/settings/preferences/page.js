@@ -53,14 +53,14 @@ export default async function PreferencesPage({ searchParams }) {
     redirect('/login');
   }
 
-  const [{ data: prefs }, { data: profile }, headersList] = await Promise.all([
+  const [{ data: prefs }, { data: icsToken }, headersList] = await Promise.all([
     supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle(),
-    supabase.from('profiles').select('ics_token').eq('id', user.id).single(),
+    supabase.rpc('get_my_ics_token'),
     headers(),
   ]);
 
   const host = headersList.get('host');
-  const feedUrl = `${host?.startsWith('localhost') ? 'http' : 'https'}://${host}/api/ics/me?token=${profile?.ics_token}`;
+  const feedUrl = `${host?.startsWith('localhost') ? 'http' : 'https'}://${host}/api/ics/me?token=${icsToken}`;
 
   return (
     <>
