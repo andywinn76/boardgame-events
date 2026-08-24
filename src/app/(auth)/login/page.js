@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PasswordInput } from '@/components/password-input';
 
 export default async function LoginPage({ searchParams }) {
-  const { error, next } = await searchParams;
+  const { confirmed, error, next } = await searchParams;
 
   return (
     <PageShell size="sm" center>
@@ -21,6 +21,12 @@ export default async function LoginPage({ searchParams }) {
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {confirmed === '1' && (
+            <Alert>
+              <AlertDescription>Your email is confirmed. Log in to continue.</AlertDescription>
             </Alert>
           )}
 
