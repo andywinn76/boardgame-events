@@ -12,6 +12,12 @@ function safeNext(value) {
   return value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
 }
 
+function signupErrorPath(message, next) {
+  const params = new URLSearchParams({ error: message });
+  if (next !== '/') params.set('next', next);
+  return `/signup?${params.toString()}`;
+}
+
 export async function login(formData) {
   const supabase = await createClient();
 
@@ -32,6 +38,7 @@ export async function login(formData) {
 
 export async function signup(formData) {
   const supabase = await createClient();
+  const next = safeNext(formData.get('next'));
   const username = String(formData.get('username') || '').trim().toLowerCase();
   const firstName = String(formData.get('first_name') || '').trim();
   const lastName = String(formData.get('last_name') || '').trim();
@@ -39,27 +46,23 @@ export async function signup(formData) {
   const confirmPassword = String(formData.get('confirm_password') || '');
 
   if (!/^[a-z0-9_]{3,24}$/.test(username)) {
-    redirect(
-      `/signup?error=${encodeURIComponent(
-        'Username must be 3 to 24 characters using only lowercase letters, numbers, and underscores.'
-      )}`
-    );
+    redirect(signupErrorPath('Username must be 3 to 24 characters using only lowercase letters, numbers, and underscores.', next));
   }
 
   if (!firstName) {
-    redirect(`/signup?error=${encodeURIComponent('First name is required.')}`);
+    redirect(signupErrorPath('First name is required.', next));
   }
 
   if (firstName.length > 80 || lastName.length > 80) {
-    redirect(`/signup?error=${encodeURIComponent('Names must be 80 characters or fewer.')}`);
+    redirect(signupErrorPath('Names must be 80 characters or fewer.', next));
   }
 
   if (password.length < 6) {
-    redirect(`/signup?error=${encodeURIComponent('Password must be at least 6 characters.')}`);
+    redirect(signupErrorPath('Password must be at least 6 characters.', next));
   }
 
   if (password !== confirmPassword) {
-    redirect(`/signup?error=${encodeURIComponent('Passwords do not match.')}`);
+    redirect(signupErrorPath('Passwords do not match.', next));
   }
 
   const { data: existingProfile, error: usernameCheckError } = await supabase
@@ -69,20 +72,21 @@ export async function signup(formData) {
     .maybeSingle();
 
   if (usernameCheckError) {
-    redirect(
-      `/signup?error=${encodeURIComponent('Could not check username availability. Please try again.')}`
-    );
+    redirect(signupErrorPath('Could not check username availability. Please try again.', next));
   }
 
   if (existingProfile) {
-    redirect(`/signup?error=${encodeURIComponent('That username is already taken.')}`);
+    redirect(signupErrorPath('That username is already taken.', next));
   }
+
+  const callbackUrl = new URL('/callback', `${siteUrl}/`);
+  if (next !== '/') callbackUrl.searchParams.set('next', next);
 
   const { error } = await supabase.auth.signUp({
     email: formData.get('email'),
     password,
     options: {
-      emailRedirectTo: `${siteUrl}/callback`,
+      emailRedirectTo: callbackUrl.toString(),
       data: {
         username,
         first_name: firstName,
@@ -92,7 +96,7 @@ export async function signup(formData) {
   });
 
   if (error) {
-    redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+    redirect(signupErrorPath(error.message, next));
   }
 
   redirect('/signup/check-email');

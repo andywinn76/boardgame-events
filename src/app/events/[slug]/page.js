@@ -54,18 +54,8 @@ export default async function EventDetailPage({ params, searchParams }) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [
-    { data: seatCounts },
-    { data: attendeeNames },
-    { data: featuredGames },
-    { data: myRsvp },
-    { data: venue },
-    { data: hostRow },
-  ] = await Promise.all([
+  const [{ data: seatCounts }, { data: featuredGames }, { data: myRsvp }, { data: hostRow }] = await Promise.all([
     supabase.rpc('event_seat_count', { _event: event.id }).single(),
-    user
-      ? supabase.rpc('event_attendee_names', { _event: event.id })
-      : Promise.resolve({ data: [] }),
     event.featured_games_enabled
       ? supabase
           .from('event_games')
@@ -78,9 +68,6 @@ export default async function EventDetailPage({ params, searchParams }) {
     user
       ? supabase.from('rsvps').select('status, seats_claimed').eq('event_id', event.id).eq('user_id', user.id).maybeSingle()
       : Promise.resolve({ data: null }),
-    event.venue_id
-      ? supabase.rpc('event_venue_details', { _event: event.id }).maybeSingle()
-      : Promise.resolve({ data: null }),
     user
       ? supabase.from('event_hosts').select('role').eq('event_id', event.id).eq('user_id', user.id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -90,21 +77,26 @@ export default async function EventDetailPage({ params, searchParams }) {
   const isFull = event.seat_limit != null && seatsLeft <= 0;
   const activeStatus = myRsvp && myRsvp.status !== 'cancelled' ? myRsvp.status : null;
   const isHost = Boolean(hostRow);
-  const onRoster = isHost || ['going', 'waitlist', 'maybe'].includes(activeStatus);
+  const canViewPrivateDetails = isHost || activeStatus === 'going';
+
+  const [{ data: attendeeNames }, { data: venue }, { data: messages }] = canViewPrivateDetails
+    ? await Promise.all([
+        supabase.rpc('event_attendee_names', { _event: event.id }),
+        event.venue_id
+          ? supabase.rpc('event_venue_details', { _event: event.id }).maybeSingle()
+          : Promise.resolve({ data: null }),
+        supabase
+          .from('event_messages')
+          .select('id, body, created_at, profiles(id, username, display_name)')
+          .eq('event_id', event.id)
+          .order('created_at', { ascending: true }),
+      ])
+    : [{ data: [] }, { data: null }, { data: null }];
+
   const confirmedAttendeeCount = attendeeNames?.length || 0;
-  const confirmedGuestCount = user
+  const confirmedGuestCount = canViewPrivateDetails
     ? Math.max(0, Number(seatCounts?.seats_taken || 0) - confirmedAttendeeCount)
     : 0;
-
-  // RLS-gated the same way as the roster itself -- resolves to real rows only
-  // for hosts and RSVP'd attendees, so this doubles as the visibility check.
-  const { data: messages } = onRoster
-    ? await supabase
-        .from('event_messages')
-        .select('id, body, created_at, profiles(id, username, display_name)')
-        .eq('event_id', event.id)
-        .order('created_at', { ascending: true })
-    : { data: null };
 
   const preciseMapUrl = venueMapUrl(venue);
   const fallbackMapUrl = coarseMapUrl({
@@ -119,6 +111,10 @@ export default async function EventDetailPage({ params, searchParams }) {
   const protocol = hostName?.startsWith('localhost') ? 'http' : 'https';
   const baseUrl = `${protocol}://${hostName}`;
   const eventUrl = `${baseUrl}/events/${slug}`;
+  const eventPath = `/events/${slug}`;
+  const loginForRsvp = `/login?next=${encodeURIComponent(eventPath)}&reason=rsvp`;
+  const signupForRsvp = `/signup?next=${encodeURIComponent(eventPath)}&reason=rsvp`;
+  const loginForReport = `/login?next=${encodeURIComponent(eventPath)}&reason=report`;
   const calendarLinks = eventCalendarLinks({
     event,
     venue,
@@ -307,7 +303,7 @@ export default async function EventDetailPage({ params, searchParams }) {
                 : `${seatsLeft} of ${event.seat_limit} seats left`
               : 'Unlimited seats'}
           </p>
-          {attendeeNames?.length > 0 && (
+          {canViewPrivateDetails && attendeeNames?.length > 0 && (
             <p className="text-muted-foreground">
               {attendeeNames
                 .map(({ attendee_name: attendeeName, is_organizer: isOrganizer }) =>
@@ -316,7 +312,7 @@ export default async function EventDetailPage({ params, searchParams }) {
                 .join(', ')}
             </p>
           )}
-          {confirmedGuestCount > 0 && (
+          {canViewPrivateDetails && confirmedGuestCount > 0 && (
             <p className="text-muted-foreground">
               {confirmedAttendeeCount} registered {confirmedAttendeeCount === 1 ? 'attendee' : 'attendees'} and{' '}
               {confirmedGuestCount} {confirmedGuestCount === 1 ? 'guest' : 'guests'}
@@ -349,6 +345,25 @@ export default async function EventDetailPage({ params, searchParams }) {
 
       {event.status === 'published' && (
         <div>
+          {!user && (
+            <Card className="px-(--card-spacing)">
+              <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+                <div>
+                  <p className="font-heading font-semibold text-foreground">Want to join this event?</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Log in or create an account to RSVP.</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button nativeButton={false} variant="outline" render={<Link href={loginForRsvp} />}>
+                    Log in
+                  </Button>
+                  <Button nativeButton={false} render={<Link href={signupForRsvp} />}>
+                    Sign up
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {activeStatus === 'going' && (
             <Card className="px-(--card-spacing)">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -410,7 +425,7 @@ export default async function EventDetailPage({ params, searchParams }) {
             </Card>
           )}
 
-          {!activeStatus && (isFull ? event.allow_waitlist : true) && (
+          {user && !activeStatus && (isFull ? event.allow_waitlist : true) && (
             <form action={rsvpToEvent} className="flex flex-wrap items-center gap-2">
               <input type="hidden" name="event_id" value={event.id} />
               <input type="hidden" name="slug" value={slug} />
@@ -424,13 +439,13 @@ export default async function EventDetailPage({ params, searchParams }) {
             </form>
           )}
 
-          {!activeStatus && isFull && !event.allow_waitlist && (
+          {user && !activeStatus && isFull && !event.allow_waitlist && (
             <p className="text-center text-sm text-muted-foreground">This event is full.</p>
           )}
         </div>
       )}
 
-      {onRoster && (
+      {canViewPrivateDetails && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -486,6 +501,13 @@ export default async function EventDetailPage({ params, searchParams }) {
             </Button>
           </form>
         </details>
+      )}
+
+      {!user && (
+        <Link href={loginForReport} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+          <Flag className="size-3.5" />
+          Log in to report this event
+        </Link>
       )}
     </PageShell>
   );

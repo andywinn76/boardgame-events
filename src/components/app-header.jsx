@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Bell, CalendarDays, Home, LogIn, Settings } from 'lucide-react';
+import { Bell, CalendarDays, Home, LogIn, Settings, UserPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { logout } from '@/app/(auth)/actions';
 import { Button } from '@/components/ui/button';
@@ -42,10 +42,16 @@ export async function AppHeader() {
               </form>
             </>
           ) : (
-            <Button nativeButton={false} variant="outline" size="sm" render={<Link href="/login" />}>
-              <LogIn />
-              Log in
-            </Button>
+            <>
+              <Button nativeButton={false} variant="ghost" size="sm" render={<Link href="/signup" />}>
+                <UserPlus />
+                <span className="hidden sm:inline">Sign up</span>
+              </Button>
+              <Button nativeButton={false} variant="outline" size="sm" render={<Link href="/login" />}>
+                <LogIn />
+                Log in
+              </Button>
+            </>
           )}
         </div>
       </nav>

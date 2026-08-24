@@ -67,7 +67,7 @@ export async function createEvent(formData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login');
+    redirect('/login?next=%2Fevents%2Fnew&reason=host');
   }
 
   const title = formData.get('title');
@@ -284,7 +284,7 @@ export async function rsvpToEvent(formData) {
   const guestCount = Number(formData.get('guest_count') || 0);
 
   if (!user) {
-    redirect('/login');
+    redirect(`/login?next=${encodeURIComponent(`/events/${slug}`)}&reason=rsvp`);
   }
 
   if (!Number.isInteger(guestCount) || guestCount < 0 || guestCount > 10) {
@@ -404,13 +404,13 @@ export async function postMessage(formData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/login');
-  }
-
   const slug = formData.get('slug');
   const eventId = formData.get('event_id');
   const body = formData.get('body');
+
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent(`/events/${slug}`)}&reason=message`);
+  }
 
   if (!body?.trim()) {
     redirect(`/events/${slug}?error=${encodeURIComponent('Message cannot be empty')}`);
@@ -541,14 +541,14 @@ export async function reportEvent(formData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/login');
-  }
-
   const slug = formData.get('slug');
   const eventId = formData.get('event_id');
   const subjectUser = formData.get('subject_user');
   const reason = formData.get('reason');
+
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent(`/events/${slug}`)}&reason=report`);
+  }
 
   if (!reason?.trim()) {
     redirect(`/events/${slug}?error=${encodeURIComponent('A reason is required to report an event')}`);

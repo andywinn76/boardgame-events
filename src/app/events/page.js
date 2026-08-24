@@ -8,10 +8,14 @@ import { EventBrowser } from '@/components/event-browser';
 
 export default async function EventsPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { data: events } = await supabase
     .from('events')
     .select('id, slug, title, starts_at, timezone, location_label, city, seat_limit, approx_lat, approx_lng')
     .eq('status', 'published')
+    .eq('visibility', 'public')
     .gte('starts_at', new Date().toISOString())
     .order('starts_at', { ascending: true });
 
@@ -35,7 +39,10 @@ export default async function EventsPage() {
             <CalendarDays />
             Calendar
           </Button>
-          <Button nativeButton={false} render={<Link href="/events/new" />}>
+          <Button
+            nativeButton={false}
+            render={<Link href={user ? '/events/new' : '/login?next=%2Fevents%2Fnew&reason=host'} />}
+          >
             <Plus />
             Host an event
           </Button>

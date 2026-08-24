@@ -9,7 +9,16 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PasswordInput } from '@/components/password-input';
 
 export default async function LoginPage({ searchParams }) {
-  const { confirmed, error, next } = await searchParams;
+  const { confirmed, error, next, reason } = await searchParams;
+  const reasonMessage = {
+    host: 'Log in or sign up to host an event.',
+    message: 'Log in or sign up to view and post event messages.',
+    report: 'Log in or sign up to report an event.',
+    rsvp: 'Log in or sign up to RSVP for this event.',
+  }[reason];
+  const signupHref = next
+    ? `/signup?next=${encodeURIComponent(next)}${reason ? `&reason=${encodeURIComponent(reason)}` : ''}`
+    : '/signup';
 
   return (
     <PageShell size="sm" center>
@@ -30,6 +39,12 @@ export default async function LoginPage({ searchParams }) {
             </Alert>
           )}
 
+          {reasonMessage && (
+            <Alert>
+              <AlertDescription>{reasonMessage}</AlertDescription>
+            </Alert>
+          )}
+
           <form action={login} className="space-y-4">
             {next && <input type="hidden" name="next" value={next} />}
             <div className="space-y-1.5">
@@ -47,7 +62,7 @@ export default async function LoginPage({ searchParams }) {
 
           <p className="text-sm text-muted-foreground">
             Need an account?{' '}
-            <Link href="/signup" className="font-medium text-foreground underline underline-offset-2">
+            <Link href={signupHref} className="font-medium text-foreground underline underline-offset-2">
               Sign up
             </Link>
           </p>

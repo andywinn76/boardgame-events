@@ -9,8 +9,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PasswordConfirmationFields } from '@/components/password-confirmation-fields';
 
 export default async function SignupPage({ searchParams }) {
-  const { error } = await searchParams;
+  const { error, next, reason } = await searchParams;
   const passwordError = error === 'Passwords do not match.' ? error : '';
+  const reasonMessage = {
+    host: 'Create an account to host an event.',
+    message: 'Create an account to view and post event messages.',
+    report: 'Create an account to report an event.',
+    rsvp: 'Create an account to RSVP for this event.',
+  }[reason];
+  const loginHref = next
+    ? `/login?next=${encodeURIComponent(next)}${reason ? `&reason=${encodeURIComponent(reason)}` : ''}`
+    : '/login';
 
   return (
     <PageShell size="sm" center>
@@ -25,7 +34,14 @@ export default async function SignupPage({ searchParams }) {
             </Alert>
           )}
 
+          {reasonMessage && (
+            <Alert>
+              <AlertDescription>{reasonMessage}</AlertDescription>
+            </Alert>
+          )}
+
           <form action={signup} className="space-y-4">
+            {next && <input type="hidden" name="next" value={next} />}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="first_name">First name</Label>
@@ -69,7 +85,7 @@ export default async function SignupPage({ searchParams }) {
 
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-foreground underline underline-offset-2">
+            <Link href={loginHref} className="font-medium text-foreground underline underline-offset-2">
               Log in
             </Link>
           </p>

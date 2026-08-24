@@ -23,7 +23,7 @@ export default async function NewEventPage({ searchParams }) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login');
+    redirect('/login?next=%2Fevents%2Fnew&reason=host');
   }
 
   const { data: savedVenues } = await supabase

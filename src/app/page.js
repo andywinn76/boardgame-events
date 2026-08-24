@@ -210,7 +210,10 @@ export default async function Home() {
             </Card>
           </div>
         ) : (
-          <div className="flex justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link href="/events" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
+              Continue as guest
+            </Link>
             <Link href="/login" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
               Log in
             </Link>

@@ -36,7 +36,10 @@ export async function GET(request) {
   }
 
   if (code && isMissingCodeVerifier(confirmationError)) {
-    return NextResponse.redirect(`${origin}/login?confirmed=1`);
+    const loginUrl = new URL('/login', origin);
+    loginUrl.searchParams.set('confirmed', '1');
+    if (next !== '/') loginUrl.searchParams.set('next', next);
+    return NextResponse.redirect(loginUrl);
   }
 
   if (confirmationError) {
