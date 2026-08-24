@@ -16,7 +16,12 @@ export function venueMapUrl(venue) {
 // Coarse link for everyone else: a text search on cross streets + city rather
 // than a pin, so it never resolves to an exact address.
 export function coarseMapUrl({ locationLabel, neighborhood, crossStreets, city }) {
-  const query = [locationLabel, neighborhood, crossStreets, city].filter(Boolean).join(', ');
+  // A house nickname or informal location label can match an unrelated business.
+  // When cross streets are available, let the intersection drive the search and
+  // use the city (or neighborhood as a fallback) only to disambiguate it.
+  const query = crossStreets
+    ? [crossStreets, city || neighborhood].filter(Boolean).join(', ')
+    : [locationLabel, neighborhood, city].filter(Boolean).join(', ');
   if (!query) return null;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }

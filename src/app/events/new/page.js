@@ -9,9 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FeaturedGamesPicker } from '@/components/featured-games-picker';
+import { SeatLimitField } from '@/components/seat-limit-field';
 
 const selectClass =
-  'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
+  'h-8 w-full min-w-0 rounded-lg border border-input bg-card px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
 
 export default async function NewEventPage({ searchParams }) {
   const { error } = await searchParams;
@@ -25,10 +26,10 @@ export default async function NewEventPage({ searchParams }) {
     redirect('/login');
   }
 
-  const { data: sharedVenues } = await supabase
+  const { data: savedVenues } = await supabase
     .from('venues')
     .select('id, name, city')
-    .eq('is_shared', true)
+    .eq('created_by', user.id)
     .order('name');
 
   return (
@@ -41,7 +42,10 @@ export default async function NewEventPage({ searchParams }) {
         </Alert>
       )}
 
-      <form action={createEvent} className="space-y-4">
+      <form
+        action={createEvent}
+        className="space-y-4 [&_[data-slot=input]]:bg-card [&_[data-slot=textarea]]:bg-card"
+      >
         <div className="space-y-1.5">
           <Label htmlFor="title">Title</Label>
           <Input id="title" name="title" type="text" required />
@@ -85,12 +89,13 @@ export default async function NewEventPage({ searchParams }) {
             Venue <span className="font-normal text-muted-foreground">(optional)</span>
           </legend>
 
-          {sharedVenues?.length > 0 && (
+          {savedVenues?.length > 0 && (
             <div className="space-y-1.5">
               <Label htmlFor="venue_id">Saved venue</Label>
+              <p className="text-xs text-muted-foreground">Only venues you have added appear here.</p>
               <select id="venue_id" name="venue_id" defaultValue="" className={selectClass}>
                 <option value="">None. Describe the location below</option>
-                {sharedVenues.map((venue) => (
+                {savedVenues.map((venue) => (
                   <option key={venue.id} value={venue.id}>
                     {venue.name}
                     {venue.city ? ` · ${venue.city}` : ''}
@@ -131,7 +136,7 @@ export default async function NewEventPage({ searchParams }) {
                       className="size-4 rounded border-input accent-primary"
                     />
                     <Label htmlFor="new_venue_is_shared" className="font-normal">
-                      Save for future events
+                      Share this public venue with other hosts
                     </Label>
                   </div>
                 </div>
@@ -172,7 +177,7 @@ export default async function NewEventPage({ searchParams }) {
                   id="new_venue_cross_streets"
                   name="new_venue_cross_streets"
                   type="text"
-                  placeholder="Downing & Louisiana"
+                  placeholder="4th and Main St."
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -208,7 +213,7 @@ export default async function NewEventPage({ searchParams }) {
             <p className="text-xs text-muted-foreground">Or just describe the location without saving a venue:</p>
             <div className="mt-3 space-y-1.5">
               <Label htmlFor="location_label">Location name</Label>
-              <Input id="location_label" name="location_label" type="text" placeholder="Someone's back yard" />
+              <Input id="location_label" name="location_label" type="text" placeholder="Jane's house." />
             </div>
             <div className="mt-3 grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -222,37 +227,64 @@ export default async function NewEventPage({ searchParams }) {
             </div>
             <div className="mt-3 space-y-1.5">
               <Label htmlFor="cross_streets">Cross streets</Label>
-              <Input id="cross_streets" name="cross_streets" type="text" placeholder="Downing & Louisiana" />
+              <Input id="cross_streets" name="cross_streets" type="text" placeholder="4th and Main St." />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset className="space-y-4 rounded-xl border border-border bg-muted/30 p-4">
+          <legend className="px-1 text-sm font-medium text-foreground">Attendees</legend>
+
+          <SeatLimitField />
+
+          <div className="flex items-center gap-2">
+            <input
+              id="allow_waitlist"
+              name="allow_waitlist"
+              type="checkbox"
+              defaultChecked
+              className="size-4 rounded border-input accent-primary"
+            />
+            <Label htmlFor="allow_waitlist" className="font-normal">
+              Allow a waitlist once seats fill up
+            </Label>
+          </div>
+
+          <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-2">
+            <input
+              id="allow_plus_ones"
+              name="allow_plus_ones"
+              type="checkbox"
+              className="peer size-4 rounded border-input accent-primary"
+            />
+            <Label htmlFor="allow_plus_ones" className="font-normal">
+              Allow attendees to bring guests
+            </Label>
+            <div className="col-span-2 ml-6 hidden items-center gap-2 peer-checked:flex">
+              <Label htmlFor="max_guests_per_rsvp" className="font-normal">Guests allowed per attendee</Label>
+              <select
+                id="max_guests_per_rsvp"
+                name="max_guests_per_rsvp"
+                defaultValue="1"
+                className={`${selectClass} max-w-16 shrink-0`}
+              >
+                {Array.from({ length: 10 }, (_, index) => index + 1).map((count) => (
+                  <option key={count} value={count}>{count}</option>
+                ))}
+              </select>
             </div>
           </div>
         </fieldset>
 
         <div className="space-y-1.5">
-          <Label htmlFor="seat_limit">
-            Seat limit <span className="font-normal text-muted-foreground">(blank = unlimited)</span>
-          </Label>
-          <Input id="seat_limit" name="seat_limit" type="number" min="1" />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            id="allow_waitlist"
-            name="allow_waitlist"
-            type="checkbox"
-            defaultChecked
-            className="size-4 rounded border-input accent-primary"
-          />
-          <Label htmlFor="allow_waitlist" className="font-normal">
-            Allow a waitlist once seats fill up
-          </Label>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="visibility">Visibility</Label>
+          <Label htmlFor="visibility">Event discoverability</Label>
+          <p className="text-xs text-muted-foreground">
+            Choose whether people can find this event without its direct link.
+          </p>
           <select id="visibility" name="visibility" defaultValue="public" className={selectClass}>
-            <option value="public">Public: anyone can find it</option>
-            <option value="unlisted">Unlisted: only people with the link</option>
-            <option value="invite_only">Invite only</option>
+            <option value="public">Listed: appears in event browsing</option>
+            <option value="unlisted">Unlisted: only people with the direct link</option>
+            <option value="invite_only">Invite only: only accepted invitees</option>
           </select>
         </div>
 

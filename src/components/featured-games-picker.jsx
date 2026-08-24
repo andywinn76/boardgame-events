@@ -2,12 +2,34 @@
 
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { LoaderCircle, Search, X } from 'lucide-react';
+import { CircleHelp, LoaderCircle, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 
 const MAX_FEATURED_GAMES = 5;
+
+function FeaturedGamesInfo() {
+  return (
+    <span className="group relative inline-flex align-middle">
+      <button
+        type="button"
+        aria-label="What are featured games?"
+        aria-describedby="featured-games-help"
+        className="rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <CircleHelp className="size-3.5" />
+      </button>
+      <span
+        id="featured-games-help"
+        role="tooltip"
+        className="pointer-events-none absolute top-full left-1/2 z-10 mt-2 hidden w-64 -translate-x-1/2 rounded-lg bg-foreground px-3 py-2 text-xs font-normal leading-relaxed text-background shadow-lg group-hover:block group-focus-within:block"
+      >
+        Featured games will let hosts highlight up to five planned games using BoardGameGeek details and box art. BoardGameGeek API access is still pending.
+      </span>
+    </span>
+  );
+}
 
 export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] }) {
   const [enabled, setEnabled] = useState(defaultEnabled);
@@ -70,7 +92,12 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
   return (
     <fieldset className="space-y-4 rounded-xl border border-border bg-muted/30 p-4">
       <legend className="px-1 text-sm font-medium text-foreground">
-        Featured games <span className="font-normal text-muted-foreground">(optional)</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span>
+            Featured games <span className="font-normal text-muted-foreground">(optional, coming soon)</span>
+          </span>
+          <FeaturedGamesInfo />
+        </span>
       </legend>
 
       <input type="hidden" name="featured_games" value={JSON.stringify(selected.map((game) => game.bgg_id))} />

@@ -76,6 +76,12 @@ export async function createEvent(formData) {
   const endsAtLocal = formData.get('ends_at');
   const seatLimitRaw = formData.get('seat_limit');
   const featuredGamesEnabled = formData.get('featured_games_enabled') === 'on';
+  const allowPlusOnes = formData.get('allow_plus_ones') === 'on';
+  const maxGuestsPerRsvp = Number(formData.get('max_guests_per_rsvp') || 1);
+
+  if (!Number.isInteger(maxGuestsPerRsvp) || maxGuestsPerRsvp < 1 || maxGuestsPerRsvp > 10) {
+    redirect(`/events/new?error=${encodeURIComponent('Choose a guest limit between one and ten.')}`);
+  }
 
   let featuredGameIds;
   try {
@@ -152,6 +158,8 @@ export async function createEvent(formData) {
       city: formData.get('city') || null,
       seat_limit: seatLimitRaw ? Number(seatLimitRaw) : null,
       allow_waitlist: formData.get('allow_waitlist') === 'on',
+      allow_plus_ones: allowPlusOnes,
+      max_guests_per_rsvp: maxGuestsPerRsvp,
       featured_games_enabled: featuredGamesEnabled,
     })
     .select('id, slug')
@@ -191,9 +199,15 @@ export async function updateEvent(formData) {
   const endsAtLocal = String(formData.get('ends_at') || '');
   const seatLimitRaw = String(formData.get('seat_limit') || '');
   const featuredGamesEnabled = formData.get('featured_games_enabled') === 'on';
+  const allowPlusOnes = formData.get('allow_plus_ones') === 'on';
+  const maxGuestsPerRsvp = Number(formData.get('max_guests_per_rsvp') || 1);
 
   if (!eventId || !slug || !title || !timezone || !startsAtLocal) {
     redirect(`/events/${slug}/edit?error=${encodeURIComponent('Title, date/time, and timezone are required')}`);
+  }
+
+  if (!Number.isInteger(maxGuestsPerRsvp) || maxGuestsPerRsvp < 1 || maxGuestsPerRsvp > 10) {
+    redirect(`/events/${slug}/edit?error=${encodeURIComponent('Choose a guest limit between one and ten.')}`);
   }
 
   const { data: hostRow } = await supabase
@@ -236,6 +250,8 @@ export async function updateEvent(formData) {
       city: String(formData.get('city') || '').trim() || null,
       seat_limit: seatLimitRaw ? Number(seatLimitRaw) : null,
       allow_waitlist: formData.get('allow_waitlist') === 'on',
+      allow_plus_ones: allowPlusOnes,
+      max_guests_per_rsvp: maxGuestsPerRsvp,
       featured_games_enabled: featuredGamesEnabled,
     })
     .eq('id', eventId);
@@ -265,12 +281,20 @@ export async function rsvpToEvent(formData) {
 
   const slug = formData.get('slug');
   const eventId = formData.get('event_id');
+  const guestCount = Number(formData.get('guest_count') || 0);
 
   if (!user) {
     redirect('/login');
   }
 
-  const { error } = await supabase.rpc('rsvp_to_event', { _event: eventId });
+  if (!Number.isInteger(guestCount) || guestCount < 0 || guestCount > 10) {
+    redirect(`/events/${slug}?error=${encodeURIComponent('Choose between zero and ten guests.')}`);
+  }
+
+  const { error } = await supabase.rpc('rsvp_to_event', {
+    _event: eventId,
+    _seats: guestCount + 1,
+  });
 
   if (error) {
     redirect(`/events/${slug}?error=${encodeURIComponent(error.message)}`);

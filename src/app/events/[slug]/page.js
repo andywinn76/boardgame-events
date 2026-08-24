@@ -16,6 +16,21 @@ import { eventCalendarLinks } from '@/lib/calendar-links';
 import { headers } from 'next/headers';
 import { formatInTimeZone } from 'date-fns-tz';
 
+const selectClass =
+  'h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30';
+
+function GuestCountSelect({ defaultValue = 0, maxGuests = 5 }) {
+  return (
+    <select name="guest_count" defaultValue={defaultValue} className={selectClass} aria-label="Number of guests">
+      {Array.from({ length: maxGuests + 1 }, (_, guestCount) => (
+        <option key={guestCount} value={guestCount}>
+          {guestCount === 0 ? 'No guests' : `${guestCount} ${guestCount === 1 ? 'guest' : 'guests'}`}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 export default async function EventDetailPage({ params, searchParams }) {
   const { slug } = await params;
   const { error, reported, updated } = await searchParams;
@@ -24,7 +39,7 @@ export default async function EventDetailPage({ params, searchParams }) {
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, description, starts_at, ends_at, timezone, location_label, neighborhood, cross_streets, city, venue_id, seat_limit, allow_waitlist, featured_games_enabled, visibility, status, cancellation_reason, created_by, profiles!events_created_by_fkey(username, display_name)'
+      'id, title, description, starts_at, ends_at, timezone, location_label, neighborhood, cross_streets, city, venue_id, seat_limit, allow_waitlist, allow_plus_ones, max_guests_per_rsvp, featured_games_enabled, visibility, status, cancellation_reason, created_by, profiles!events_created_by_fkey(username, display_name)'
     )
     .eq('slug', slug)
     .single();
@@ -61,7 +76,7 @@ export default async function EventDetailPage({ params, searchParams }) {
           .order('sort_order')
       : Promise.resolve({ data: [] }),
     user
-      ? supabase.from('rsvps').select('status').eq('event_id', event.id).eq('user_id', user.id).maybeSingle()
+      ? supabase.from('rsvps').select('status, seats_claimed').eq('event_id', event.id).eq('user_id', user.id).maybeSingle()
       : Promise.resolve({ data: null }),
     event.venue_id
       ? supabase.rpc('event_venue_details', { _event: event.id }).maybeSingle()
@@ -76,6 +91,10 @@ export default async function EventDetailPage({ params, searchParams }) {
   const activeStatus = myRsvp && myRsvp.status !== 'cancelled' ? myRsvp.status : null;
   const isHost = Boolean(hostRow);
   const onRoster = isHost || ['going', 'waitlist', 'maybe'].includes(activeStatus);
+  const confirmedAttendeeCount = attendeeNames?.length || 0;
+  const confirmedGuestCount = user
+    ? Math.max(0, Number(seatCounts?.seats_taken || 0) - confirmedAttendeeCount)
+    : 0;
 
   // RLS-gated the same way as the roster itself -- resolves to real rows only
   // for hosts and RSVP'd attendees, so this doubles as the visibility check.
@@ -192,7 +211,7 @@ export default async function EventDetailPage({ params, searchParams }) {
                   rel="noreferrer noopener"
                   className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-2"
                 >
-                  View map
+                  {!preciseMapUrl && event.cross_streets ? 'View approximate area' : 'View map'}
                   <ExternalLink className="size-3.5" />
                 </a>
               )}
@@ -273,30 +292,41 @@ export default async function EventDetailPage({ params, searchParams }) {
       )}
 
       <Card>
-        <CardContent className="flex items-center gap-2 text-sm">
-          <Users className="size-4 text-muted-foreground" />
-          <div>
-            <p className="text-foreground">
-              {seatCounts?.seats_taken || 0} attending ·{' '}
-              {event.seat_limit
-                ? isFull
-                  ? `Full: ${event.seat_limit} seats`
-                  : `${seatsLeft} of ${event.seat_limit} seats left`
-                : 'Unlimited seats'}
+        <CardHeader>
+          <CardTitle className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Users className="size-4" />
+            Attendees
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm">
+          <p className="text-foreground">
+            {seatCounts?.seats_taken || 0} seats claimed ·{' '}
+            {event.seat_limit
+              ? isFull
+                ? `Full: ${event.seat_limit} seats`
+                : `${seatsLeft} of ${event.seat_limit} seats left`
+              : 'Unlimited seats'}
+          </p>
+          {attendeeNames?.length > 0 && (
+            <p className="text-muted-foreground">
+              {attendeeNames
+                .map(({ attendee_name: attendeeName, is_organizer: isOrganizer }) =>
+                  isOrganizer ? `${attendeeName} (organizer)` : attendeeName
+                )
+                .join(', ')}
             </p>
-            {attendeeNames?.length > 0 && (
-              <p className="text-muted-foreground">
-                {attendeeNames
-                  .map(({ attendee_name: attendeeName, is_organizer: isOrganizer }) =>
-                    isOrganizer ? `${attendeeName} (organizer)` : attendeeName
-                  )
-                  .join(', ')}
-              </p>
-            )}
-            {event.seat_limit && (
-              <p className="text-muted-foreground">{event.allow_waitlist ? 'Waitlist available once full' : 'No waitlist'}</p>
-            )}
-          </div>
+          )}
+          {confirmedGuestCount > 0 && (
+            <p className="text-muted-foreground">
+              {confirmedAttendeeCount} registered {confirmedAttendeeCount === 1 ? 'attendee' : 'attendees'} and{' '}
+              {confirmedGuestCount} {confirmedGuestCount === 1 ? 'guest' : 'guests'}
+            </p>
+          )}
+          {event.seat_limit && (
+            <p className="mt-2 text-muted-foreground">
+              {event.allow_waitlist ? 'Waitlist available once full' : 'No waitlist'}
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -320,38 +350,77 @@ export default async function EventDetailPage({ params, searchParams }) {
       {event.status === 'published' && (
         <div>
           {activeStatus === 'going' && (
-            <Card className="flex-row items-center justify-between px-(--card-spacing)">
-              <p className="text-sm font-medium text-foreground">You&rsquo;re going</p>
-              <form action={cancelRsvp}>
-                <input type="hidden" name="event_id" value={event.id} />
-                <input type="hidden" name="slug" value={slug} />
-                <Button type="submit" variant="outline">
-                  Cancel RSVP
-                </Button>
-              </form>
+            <Card className="px-(--card-spacing)">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">You&rsquo;re going</p>
+                  {myRsvp.seats_claimed > 1 && (
+                    <p className="text-xs text-muted-foreground">
+                      Your RSVP includes {myRsvp.seats_claimed - 1} {myRsvp.seats_claimed === 2 ? 'guest' : 'guests'}.
+                    </p>
+                  )}
+                </div>
+                <form action={cancelRsvp}>
+                  <input type="hidden" name="event_id" value={event.id} />
+                  <input type="hidden" name="slug" value={slug} />
+                  <Button type="submit" variant="outline">Cancel RSVP</Button>
+                </form>
+              </div>
+              {(event.allow_plus_ones || myRsvp.seats_claimed > 1) && (
+                <form action={rsvpToEvent} className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                  <input type="hidden" name="event_id" value={event.id} />
+                  <input type="hidden" name="slug" value={slug} />
+                  <GuestCountSelect
+                    defaultValue={myRsvp.seats_claimed - 1}
+                    maxGuests={event.allow_plus_ones ? event.max_guests_per_rsvp : myRsvp.seats_claimed - 1}
+                  />
+                  <Button type="submit" size="sm">Update guests</Button>
+                  <p className="w-full text-xs text-muted-foreground">Guest seats count toward event capacity.</p>
+                </form>
+              )}
             </Card>
           )}
 
           {activeStatus === 'waitlist' && (
-            <Card className="flex-row items-center justify-between px-(--card-spacing)">
-              <p className="text-sm font-medium text-foreground">You&rsquo;re on the waitlist</p>
-              <form action={cancelRsvp}>
-                <input type="hidden" name="event_id" value={event.id} />
-                <input type="hidden" name="slug" value={slug} />
-                <Button type="submit" variant="outline">
-                  Leave waitlist
-                </Button>
-              </form>
+            <Card className="px-(--card-spacing)">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">You&rsquo;re on the waitlist</p>
+                  <p className="text-xs text-muted-foreground">
+                    Waiting for {myRsvp.seats_claimed} {myRsvp.seats_claimed === 1 ? 'seat' : 'seats'}.
+                  </p>
+                </div>
+                <form action={cancelRsvp}>
+                  <input type="hidden" name="event_id" value={event.id} />
+                  <input type="hidden" name="slug" value={slug} />
+                  <Button type="submit" variant="outline">Leave waitlist</Button>
+                </form>
+              </div>
+              {(event.allow_plus_ones || myRsvp.seats_claimed > 1) && (
+                <form action={rsvpToEvent} className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                  <input type="hidden" name="event_id" value={event.id} />
+                  <input type="hidden" name="slug" value={slug} />
+                  <GuestCountSelect
+                    defaultValue={myRsvp.seats_claimed - 1}
+                    maxGuests={event.allow_plus_ones ? event.max_guests_per_rsvp : myRsvp.seats_claimed - 1}
+                  />
+                  <Button type="submit" size="sm">Update guests</Button>
+                </form>
+              )}
             </Card>
           )}
 
           {!activeStatus && (isFull ? event.allow_waitlist : true) && (
-            <form action={rsvpToEvent}>
+            <form action={rsvpToEvent} className="flex flex-wrap items-center gap-2">
               <input type="hidden" name="event_id" value={event.id} />
               <input type="hidden" name="slug" value={slug} />
+              {event.allow_plus_ones && <GuestCountSelect maxGuests={event.max_guests_per_rsvp} />}
               <Button type="submit">
                 {isFull ? 'Join waitlist' : 'RSVP'}
               </Button>
+              {event.allow_plus_ones && (
+                <p className="w-full text-xs text-muted-foreground">You and each guest claim one seat.</p>
+              )}
             </form>
           )}
 

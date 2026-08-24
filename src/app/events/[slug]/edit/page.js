@@ -5,6 +5,7 @@ import { formatDateTimeInput, SUPPORTED_TIMEZONES } from '@/lib/dates';
 import { updateEvent } from '../../actions';
 import { PageShell } from '@/components/page-shell';
 import { FeaturedGamesPicker } from '@/components/featured-games-picker';
+import { SeatLimitField } from '@/components/seat-limit-field';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 const selectClass =
-  'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
+  'h-8 w-full min-w-0 rounded-lg border border-input bg-card px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
 
 export default async function EditEventPage({ params, searchParams }) {
   const { slug } = await params;
@@ -27,7 +28,7 @@ export default async function EditEventPage({ params, searchParams }) {
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, slug, title, description, starts_at, ends_at, timezone, venue_id, location_label, neighborhood, cross_streets, city, seat_limit, allow_waitlist, featured_games_enabled, visibility'
+      'id, slug, title, description, starts_at, ends_at, timezone, venue_id, location_label, neighborhood, cross_streets, city, seat_limit, allow_waitlist, allow_plus_ones, max_guests_per_rsvp, featured_games_enabled, visibility'
     )
     .eq('slug', slug)
     .single();
@@ -41,7 +42,7 @@ export default async function EditEventPage({ params, searchParams }) {
     .maybeSingle();
   if (!hostRow) notFound();
 
-  const venueFilter = [`is_shared.eq.true`, `created_by.eq.${user.id}`];
+  const venueFilter = [`created_by.eq.${user.id}`];
   if (event.venue_id) venueFilter.push(`id.eq.${event.venue_id}`);
 
   const [{ data: venues }, { data: eventGames }] = await Promise.all([
@@ -62,12 +63,13 @@ export default async function EditEventPage({ params, searchParams }) {
   return (
     <PageShell>
       <div>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="font-heading text-3xl font-bold text-foreground">Edit event</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Back to{' '}
           <Link href={`/events/${slug}`} className="underline underline-offset-2">
             {event.title}
           </Link>
         </p>
-        <h1 className="font-heading text-3xl font-bold text-foreground">Edit event</h1>
       </div>
 
       {error && (
@@ -76,7 +78,10 @@ export default async function EditEventPage({ params, searchParams }) {
         </Alert>
       )}
 
-      <form action={updateEvent} className="space-y-4">
+      <form
+        action={updateEvent}
+        className="space-y-4 [&_[data-slot=input]]:bg-card [&_[data-slot=textarea]]:bg-card"
+      >
         <input type="hidden" name="event_id" value={event.id} />
         <input type="hidden" name="slug" value={event.slug} />
 
@@ -132,6 +137,7 @@ export default async function EditEventPage({ params, searchParams }) {
 
           <div className="space-y-1.5">
             <Label htmlFor="venue_id">Saved venue</Label>
+            <p className="text-xs text-muted-foreground">Only venues you have added appear here.</p>
             <select id="venue_id" name="venue_id" defaultValue={event.venue_id || ''} className={selectClass}>
               <option value="">No saved venue. Use the general location fields</option>
               {(venues || []).map((venue) => (
@@ -162,30 +168,58 @@ export default async function EditEventPage({ params, searchParams }) {
           </div>
         </fieldset>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="seat_limit">
-            Seat limit <span className="font-normal text-muted-foreground">(blank = unlimited)</span>
-          </Label>
-          <Input id="seat_limit" name="seat_limit" type="number" min="1" defaultValue={event.seat_limit ?? ''} />
-        </div>
+        <fieldset className="space-y-4 rounded-xl border border-border bg-muted/30 p-4">
+          <legend className="px-1 text-sm font-medium text-foreground">Attendees</legend>
 
-        <div className="flex items-center gap-2">
-          <input
-            id="allow_waitlist"
-            name="allow_waitlist"
-            type="checkbox"
-            defaultChecked={event.allow_waitlist}
-            className="size-4 rounded border-input accent-primary"
-          />
-          <Label htmlFor="allow_waitlist" className="font-normal">Allow a waitlist once seats fill up</Label>
-        </div>
+          <SeatLimitField defaultValue={event.seat_limit} />
+
+          <div className="flex items-center gap-2">
+            <input
+              id="allow_waitlist"
+              name="allow_waitlist"
+              type="checkbox"
+              defaultChecked={event.allow_waitlist}
+              className="size-4 rounded border-input accent-primary"
+            />
+            <Label htmlFor="allow_waitlist" className="font-normal">Allow a waitlist once seats fill up</Label>
+          </div>
+
+          <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-2">
+            <input
+              id="allow_plus_ones"
+              name="allow_plus_ones"
+              type="checkbox"
+              defaultChecked={event.allow_plus_ones}
+              className="peer size-4 rounded border-input accent-primary"
+            />
+            <Label htmlFor="allow_plus_ones" className="font-normal">
+              Allow attendees to bring guests
+            </Label>
+            <div className="col-span-2 ml-6 hidden items-center gap-2 peer-checked:flex">
+              <Label htmlFor="max_guests_per_rsvp" className="font-normal">Guests allowed per attendee</Label>
+              <select
+                id="max_guests_per_rsvp"
+                name="max_guests_per_rsvp"
+                defaultValue={event.max_guests_per_rsvp}
+                className={`${selectClass} max-w-16 shrink-0`}
+              >
+                {Array.from({ length: 10 }, (_, index) => index + 1).map((count) => (
+                  <option key={count} value={count}>{count}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </fieldset>
 
         <div className="space-y-1.5">
-          <Label htmlFor="visibility">Visibility</Label>
+          <Label htmlFor="visibility">Event discoverability</Label>
+          <p className="text-xs text-muted-foreground">
+            Choose whether people can find this event without its direct link.
+          </p>
           <select id="visibility" name="visibility" defaultValue={event.visibility} className={selectClass}>
-            <option value="public">Public: anyone can find it</option>
-            <option value="unlisted">Unlisted: only people with the link</option>
-            <option value="invite_only">Invite only</option>
+            <option value="public">Listed: appears in event browsing</option>
+            <option value="unlisted">Unlisted: only people with the direct link</option>
+            <option value="invite_only">Invite only: only accepted invitees</option>
           </select>
         </div>
 

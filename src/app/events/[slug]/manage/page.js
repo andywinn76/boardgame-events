@@ -107,6 +107,8 @@ export default async function ManageEventPage({ params, searchParams }) {
     ? await supabase.from('attendee_reliability').select('user_id, attended, no_shows').in('user_id', goingUserIds)
     : { data: [] };
   const reliabilityByUser = Object.fromEntries((reliability || []).map((r) => [r.user_id, r]));
+  const goingRoster = (roster || []).filter((r) => r.status === 'going');
+  const confirmedGuestCount = goingRoster.reduce((total, rsvp) => total + Math.max(0, rsvp.seats_claimed - 1), 0);
 
   return (
     <PageShell size="2xl">
@@ -139,7 +141,8 @@ export default async function ManageEventPage({ params, searchParams }) {
       <Card>
         <CardContent className="flex items-center gap-2 text-sm text-muted-foreground">
           <Users className="size-4" />
-          {seatCounts?.seats_taken ?? 0} confirmed
+          {seatCounts?.seats_taken ?? 0} confirmed seats
+          {confirmedGuestCount > 0 ? ` · ${confirmedGuestCount} guest ${confirmedGuestCount === 1 ? 'seat' : 'seats'}` : ''}
           {seatCounts?.seats_left != null ? ` · ${seatCounts.seats_left} seats left` : ''}
         </CardContent>
       </Card>
@@ -160,7 +163,11 @@ export default async function ManageEventPage({ params, searchParams }) {
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-medium text-foreground">{r.profiles?.display_name || r.profiles?.username}</span>
                       <Badge variant="secondary">{RSVP_STATUS_LABEL[r.status]}</Badge>
-                      {r.seats_claimed > 1 && <Badge variant="secondary">{r.seats_claimed} seats</Badge>}
+                      {r.seats_claimed > 1 && (
+                        <Badge variant="secondary">
+                          +{r.seats_claimed - 1} {r.seats_claimed === 2 ? 'guest' : 'guests'}
+                        </Badge>
+                      )}
                       {r.checked_in_at && <Badge className="bg-success text-success-foreground">Checked in</Badge>}
                       {r.no_show && <Badge variant="destructive">No-show</Badge>}
                       {rel && (rel.attended > 0 || rel.no_shows > 0) && (
