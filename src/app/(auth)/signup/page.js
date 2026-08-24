@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PasswordConfirmationFields } from '@/components/password-confirmation-fields';
 
 export default async function SignupPage({ searchParams }) {
   const { error } = await searchParams;
+  const passwordError = error === 'Passwords do not match.' ? error : '';
 
   return (
     <PageShell size="sm" center>
@@ -17,7 +19,7 @@ export default async function SignupPage({ searchParams }) {
           <CardTitle className="font-heading text-2xl">Sign up</CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          {error && (
+          {error && !passwordError && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -37,22 +39,33 @@ export default async function SignupPage({ searchParams }) {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" required />
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                required
+                minLength={3}
+                maxLength={24}
+                pattern="[a-z0-9_]{3,24}"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                aria-describedby="username-help"
+              />
+              <p id="username-help" className="text-xs text-muted-foreground">
+                3 to 24 lowercase letters, numbers, or underscores.
+              </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required minLength={6} />
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" required autoComplete="email" />
             </div>
+            <PasswordConfirmationFields serverError={passwordError} />
             <Button type="submit" size="lg" className="w-full">
               Sign up
             </Button>
           </form>
-
-          <p className="text-sm text-muted-foreground">
-            You&apos;ll get a placeholder username to start. Set your real one from settings after you
-            confirm your email.
-          </p>
 
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}

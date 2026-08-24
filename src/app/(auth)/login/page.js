@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PasswordInput } from '@/components/password-input';
 
 export default async function LoginPage({ searchParams }) {
   const { error, next } = await searchParams;
@@ -31,7 +32,7 @@ export default async function LoginPage({ searchParams }) {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
+              <PasswordInput id="password" name="password" required autoComplete="current-password" />
             </div>
             <Button type="submit" size="lg" className="w-full">
               Log in
