@@ -28,7 +28,7 @@ export default async function NewEventPage({ searchParams }) {
 
   const { data: savedVenues } = await supabase
     .from('venues')
-    .select('id, name, city')
+    .select('id, name, city, region')
     .eq('created_by', user.id)
     .order('name');
 
@@ -98,7 +98,7 @@ export default async function NewEventPage({ searchParams }) {
                 {savedVenues.map((venue) => (
                   <option key={venue.id} value={venue.id}>
                     {venue.name}
-                    {venue.city ? ` · ${venue.city}` : ''}
+                    {venue.city || venue.region ? ` · ${[venue.city, venue.region].filter(Boolean).join(', ')}` : ''}
                   </option>
                 ))}
               </select>
@@ -215,7 +215,7 @@ export default async function NewEventPage({ searchParams }) {
               <Label htmlFor="location_label">Location name</Label>
               <Input id="location_label" name="location_label" type="text" placeholder="Jane's house." />
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-4">
+            <div className="mt-3 grid gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label htmlFor="neighborhood">Neighborhood</Label>
                 <Input id="neighborhood" name="neighborhood" type="text" />
@@ -223,6 +223,10 @@ export default async function NewEventPage({ searchParams }) {
               <div className="space-y-1.5">
                 <Label htmlFor="city">City</Label>
                 <Input id="city" name="city" type="text" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="region">State / region</Label>
+                <Input id="region" name="region" type="text" placeholder="CO" />
               </div>
             </div>
             <div className="mt-3 space-y-1.5">

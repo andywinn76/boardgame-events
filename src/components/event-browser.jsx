@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { LocateFixed, MapPin, Users } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 const selectClass =
   'h-8 min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30';
@@ -25,12 +27,28 @@ function distanceMiles(origin, event) {
   return 3958.8 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export function EventBrowser({ events }) {
+const involvementLabels = {
+  attending: "You're attending",
+  hosting: "You're hosting",
+  waitlisted: "You're waitlisted",
+};
+
+export function EventBrowser({ events, showInvolvementFilters = false }) {
   const [origin, setOrigin] = useState(null);
   const [locationStatus, setLocationStatus] = useState('idle');
   const [radius, setRadius] = useState('any');
   const [openSeatsOnly, setOpenSeatsOnly] = useState(false);
   const [sort, setSort] = useState('soonest');
+  const [involvement, setInvolvement] = useState('all');
+  const hasWaitlistedEvents = events.some((event) => event.involvement === 'waitlisted');
+  const involvementOptions = [
+    { value: 'all', shortLabel: 'All', label: 'All events' },
+    { value: 'attending', shortLabel: 'Attending', label: "Events I'm attending" },
+    { value: 'hosting', shortLabel: 'Hosting', label: "Events I'm hosting" },
+    ...(hasWaitlistedEvents
+      ? [{ value: 'waitlisted', shortLabel: 'Waitlisted', label: "Events I'm waitlisted for" }]
+      : []),
+  ];
 
   function requestLocation() {
     if (!navigator.geolocation) {
@@ -54,6 +72,7 @@ export function EventBrowser({ events }) {
     const filtered = withDistance.filter((event) => {
       const hasOpenSeats = event.seat_limit == null || Number(event.seats_left) > 0;
       if (openSeatsOnly && !hasOpenSeats) return false;
+      if (involvement !== 'all' && event.involvement !== involvement) return false;
       if (radius !== 'any' && (event.distance == null || event.distance > Number(radius))) return false;
       return true;
     });
@@ -67,38 +86,78 @@ export function EventBrowser({ events }) {
       }
       return new Date(a.starts_at) - new Date(b.starts_at);
     });
-  }, [events, openSeatsOnly, origin, radius, sort]);
+  }, [events, involvement, openSeatsOnly, origin, radius, sort]);
 
   return (
     <>
       <Card>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-end gap-3">
+            {showInvolvementFilters && (
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium text-foreground">Show</p>
+                <select
+                  aria-label="Show events"
+                  value={involvement}
+                  onChange={(event) => setInvolvement(event.target.value)}
+                  className={`${selectClass} sm:hidden`}
+                >
+                  {involvementOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <div
+                  role="group"
+                  aria-label="Show events"
+                  className="hidden h-8 items-center rounded-lg border border-input bg-background p-0.5 sm:flex"
+                >
+                  {involvementOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={involvement === option.value}
+                      onClick={() => setInvolvement(option.value)}
+                      className={cn(
+                        'h-6 rounded-md px-2.5 text-xs font-medium transition-colors',
+                        involvement === option.value
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      )}
+                    >
+                      {option.shortLabel}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="event-sort">Sort by</Label>
               <select id="event-sort" value={sort} onChange={(event) => setSort(event.target.value)} className={selectClass}>
                 <option value="soonest">Soonest</option>
-                <option value="nearest" disabled={!origin}>Nearest</option>
+                {origin && <option value="nearest">Nearest</option>}
                 <option value="seats">Most seats available</option>
               </select>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="event-radius">Distance</Label>
-              <select
-                id="event-radius"
-                value={radius}
-                disabled={!origin}
-                onChange={(event) => setRadius(event.target.value)}
-                className={selectClass}
-              >
-                <option value="any">Any distance</option>
-                <option value="5">Within 5 miles</option>
-                <option value="10">Within 10 miles</option>
-                <option value="25">Within 25 miles</option>
-                <option value="50">Within 50 miles</option>
-                <option value="100">Within 100 miles</option>
-              </select>
-            </div>
+            {origin && (
+              <div className="space-y-1.5">
+                <Label htmlFor="event-radius">Distance</Label>
+                <select
+                  id="event-radius"
+                  value={radius}
+                  onChange={(event) => setRadius(event.target.value)}
+                  className={selectClass}
+                >
+                  <option value="any">Any distance</option>
+                  <option value="5">Within 5 miles</option>
+                  <option value="10">Within 10 miles</option>
+                  <option value="25">Within 25 miles</option>
+                  <option value="50">Within 50 miles</option>
+                  <option value="100">Within 100 miles</option>
+                </select>
+              </div>
+            )}
             <Button type="button" variant="outline" size="sm" onClick={requestLocation} disabled={locationStatus === 'loading'}>
               <LocateFixed />
               {locationStatus === 'loading' ? 'Finding location...' : origin ? 'Update location' : 'Use my location'}
@@ -113,12 +172,13 @@ export function EventBrowser({ events }) {
               Available seats only
             </label>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {locationStatus === 'ready' && 'Distances use your current location and are calculated only in this browser.'}
-            {locationStatus === 'denied' && 'Location access was unavailable. You can still sort and filter by seats.'}
-            {locationStatus === 'unsupported' && 'This browser does not support location access.'}
-            {locationStatus === 'idle' && 'Use your location to enable distance filtering and nearest-first sorting.'}
-          </p>
+          {locationStatus !== 'denied' && locationStatus !== 'loading' && (
+            <p className="text-xs text-muted-foreground">
+              {locationStatus === 'ready' && 'Distances use your current location and are calculated only in this browser.'}
+              {locationStatus === 'unsupported' && 'This browser does not support location access.'}
+              {locationStatus === 'idle' && 'Use your location to enable distance filtering and nearest-first sorting.'}
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -128,16 +188,36 @@ export function EventBrowser({ events }) {
         </Card>
       ) : (
         <ul className="space-y-3">
-          {visibleEvents.map((event) => (
+          {visibleEvents.map((event) => {
+            const isActivelyInvolved = event.involvement === 'attending' || event.involvement === 'hosting';
+
+            return (
             <li key={event.id}>
-              <Card className="transition-colors hover:border-primary/40">
+              <Card
+                className={cn(
+                  'transition-colors hover:border-primary/40',
+                  isActivelyInvolved && 'border-l-[3px] border-l-primary bg-primary/5'
+                )}
+              >
                 <Link href={`/events/${event.slug}`} className="block px-(--card-spacing)">
-                  <p className="font-heading text-lg font-semibold text-foreground">{event.title}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-heading text-[1.3125rem] font-semibold text-foreground">{event.title}</p>
+                    {event.involvement && (
+                      <Badge
+                        variant={event.involvement === 'waitlisted' ? 'outline' : 'default'}
+                        className={cn(event.involvement === 'waitlisted' && 'border-primary/30 bg-primary/5 text-primary')}
+                      >
+                        {involvementLabels[event.involvement]}
+                      </Badge>
+                    )}
+                  </div>
                   <p className="mt-1 text-sm text-muted-foreground">{event.formatted_time}</p>
                   {(event.location_label || event.city) && (
                     <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                       <MapPin className="size-3.5 shrink-0" />
-                      {[event.location_label, event.city].filter(Boolean).join(' · ')}
+                      {[event.location_label, [event.city, event.region].filter(Boolean).join(', ')]
+                        .filter(Boolean)
+                        .join(' · ')}
                       {event.distance != null && ` · ${event.distance < 10 ? event.distance.toFixed(1) : Math.round(event.distance)} miles`}
                     </p>
                   )}
@@ -147,12 +227,13 @@ export function EventBrowser({ events }) {
                       ? 'Unlimited seats'
                       : Number(event.seats_left) > 0
                         ? `${event.seats_left} of ${event.seat_limit} seats available`
-                        : 'Full'}
+                        : `All seats claimed (${event.seats_taken} of ${event.seat_limit})`}
                   </p>
                 </Link>
               </Card>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </>

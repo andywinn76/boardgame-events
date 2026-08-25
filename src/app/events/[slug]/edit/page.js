@@ -28,7 +28,7 @@ export default async function EditEventPage({ params, searchParams }) {
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, slug, title, description, starts_at, ends_at, timezone, venue_id, location_label, neighborhood, cross_streets, city, seat_limit, allow_waitlist, allow_plus_ones, max_guests_per_rsvp, featured_games_enabled, visibility'
+      'id, slug, title, description, starts_at, ends_at, timezone, venue_id, location_label, neighborhood, cross_streets, city, region, seat_limit, allow_waitlist, allow_plus_ones, max_guests_per_rsvp, featured_games_enabled, visibility'
     )
     .eq('slug', slug)
     .single();
@@ -46,7 +46,7 @@ export default async function EditEventPage({ params, searchParams }) {
   if (event.venue_id) venueFilter.push(`id.eq.${event.venue_id}`);
 
   const [{ data: venues }, { data: eventGames }] = await Promise.all([
-    supabase.from('venues').select('id, name, city').or(venueFilter.join(',')).order('name'),
+    supabase.from('venues').select('id, name, city, region').or(venueFilter.join(',')).order('name'),
     event.featured_games_enabled
       ? supabase
           .from('event_games')
@@ -142,7 +142,8 @@ export default async function EditEventPage({ params, searchParams }) {
               <option value="">No saved venue. Use the general location fields</option>
               {(venues || []).map((venue) => (
                 <option key={venue.id} value={venue.id}>
-                  {venue.name}{venue.city ? ` · ${venue.city}` : ''}
+                  {venue.name}
+                  {venue.city || venue.region ? ` · ${[venue.city, venue.region].filter(Boolean).join(', ')}` : ''}
                 </option>
               ))}
             </select>
@@ -152,7 +153,7 @@ export default async function EditEventPage({ params, searchParams }) {
             <Label htmlFor="location_label">Location name</Label>
             <Input id="location_label" name="location_label" defaultValue={event.location_label || ''} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="neighborhood">Neighborhood</Label>
               <Input id="neighborhood" name="neighborhood" defaultValue={event.neighborhood || ''} />
@@ -160,6 +161,10 @@ export default async function EditEventPage({ params, searchParams }) {
             <div className="space-y-1.5">
               <Label htmlFor="city">City</Label>
               <Input id="city" name="city" defaultValue={event.city || ''} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="region">State / region</Label>
+              <Input id="region" name="region" defaultValue={event.region || ''} placeholder="CO" />
             </div>
           </div>
           <div className="space-y-1.5">

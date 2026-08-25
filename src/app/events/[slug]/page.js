@@ -39,7 +39,7 @@ export default async function EventDetailPage({ params, searchParams }) {
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, description, starts_at, ends_at, timezone, location_label, neighborhood, cross_streets, city, venue_id, seat_limit, allow_waitlist, allow_plus_ones, max_guests_per_rsvp, featured_games_enabled, visibility, status, cancellation_reason, created_by, profiles!events_created_by_fkey(username, display_name)'
+      'id, title, description, starts_at, ends_at, timezone, location_label, neighborhood, cross_streets, city, region, venue_id, seat_limit, allow_waitlist, allow_plus_ones, max_guests_per_rsvp, featured_games_enabled, visibility, status, cancellation_reason, created_by, profiles!events_created_by_fkey(username, display_name)'
     )
     .eq('slug', slug)
     .single();
@@ -97,6 +97,7 @@ export default async function EventDetailPage({ params, searchParams }) {
   const confirmedGuestCount = canViewPrivateDetails
     ? Math.max(0, Number(seatCounts?.seats_taken || 0) - confirmedAttendeeCount)
     : 0;
+  const cityAndRegion = [event.city || venue?.city, event.region || venue?.region].filter(Boolean).join(', ');
 
   const preciseMapUrl = venueMapUrl(venue);
   const fallbackMapUrl = coarseMapUrl({
@@ -131,7 +132,9 @@ export default async function EventDetailPage({ params, searchParams }) {
           {event.ends_at ? ` – ${formatEventTime(event.ends_at, event.timezone, 'h:mm a zzz')}` : ''}
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          <span>Hosted by {host?.display_name || host?.username || 'a member'}</span>
+          <span>
+            Hosted by <span className="text-primary">{host?.display_name || host?.username || 'a member'}</span>
+          </span>
           <CalendarMenu links={calendarLinks} />
           {isHost && (
             <>
@@ -184,8 +187,8 @@ export default async function EventDetailPage({ params, searchParams }) {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p className="text-foreground">
-              {event.location_label && <span className="block text-[1.3125rem] font-semibold">{event.location_label}</span>}
-              {[event.neighborhood, event.cross_streets, event.city].filter(Boolean).join(' · ')}
+              {event.location_label && <span className="block text-lg font-semibold">{event.location_label}</span>}
+              {[event.neighborhood, event.cross_streets, cityAndRegion].filter(Boolean).join(' · ')}
             </p>
 
             {venue?.address_line1 && (
@@ -296,7 +299,7 @@ export default async function EventDetailPage({ params, searchParams }) {
         </CardHeader>
         <CardContent className="text-sm">
           <p className="text-foreground">
-            {seatCounts?.seats_taken || 0} seats claimed ·{' '}
+            <span className="font-semibold">{seatCounts?.seats_taken || 0} seats claimed</span> ·{' '}
             {event.seat_limit
               ? isFull
                 ? `Full: ${event.seat_limit} seats`
@@ -349,7 +352,7 @@ export default async function EventDetailPage({ params, searchParams }) {
             <Card className="px-(--card-spacing)">
               <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
-                  <p className="font-heading font-semibold text-foreground">Want to join this event?</p>
+                  <p className="font-heading text-lg font-semibold text-foreground">Interested in attending?</p>
                   <p className="mt-1 text-sm text-muted-foreground">Log in or create an account to RSVP.</p>
                 </div>
                 <div className="flex gap-2">
@@ -368,7 +371,7 @@ export default async function EventDetailPage({ params, searchParams }) {
             <Card className="px-(--card-spacing)">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-foreground">You&rsquo;re going</p>
+                  <p className="font-heading text-lg font-semibold text-primary">You&rsquo;re going!</p>
                   {myRsvp.seats_claimed > 1 && (
                     <p className="text-xs text-muted-foreground">
                       Your RSVP includes {myRsvp.seats_claimed - 1} {myRsvp.seats_claimed === 2 ? 'guest' : 'guests'}.
