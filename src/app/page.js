@@ -13,7 +13,7 @@ const EVENT_FIELDS = 'id, slug, title, starts_at, timezone, location_label, city
 function EventSummary({ event, showSeats = false }) {
   return (
     <li className="border-t border-border py-3 first:border-t-0 first:pt-0 last:pb-0">
-      <Link href={`/events/${event.slug}`} className="font-heading font-semibold text-foreground hover:text-primary">
+      <Link href={`/events/${event.slug}`} className="font-heading text-lg font-semibold text-foreground hover:text-primary">
         {event.title}
       </Link>
       <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
