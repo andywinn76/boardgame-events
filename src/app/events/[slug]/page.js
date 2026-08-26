@@ -2,12 +2,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  CalendarDays,
-  Clock,
-  Dumbbell,
   ExternalLink,
   Flag,
-  Gauge,
   MapPin,
   MessageSquare,
   Pencil,
@@ -24,31 +20,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CalendarMenu } from '@/components/calendar-menu';
+import { GameFactIcon } from '@/components/game-fact-icon';
 import { eventCalendarLinks } from '@/lib/calendar-links';
 import { headers } from 'next/headers';
 import { formatInTimeZone } from 'date-fns-tz';
 
 const selectClass =
   'h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30';
-
-function GameFactIcon({ icon: Icon, label }) {
-  return (
-    <details className="group relative shrink-0">
-      <summary
-        className="flex size-6 cursor-help list-none items-center justify-center rounded-md outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden"
-        aria-label={`Show ${label.toLowerCase()} label`}
-      >
-        <Icon className="size-4" aria-hidden="true" />
-      </summary>
-      <span
-        role="tooltip"
-        className="pointer-events-none invisible absolute bottom-full left-1/2 z-20 mb-1 w-max -translate-x-1/2 rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background opacity-0 shadow-sm transition-opacity group-hover:visible group-hover:opacity-100 group-open:visible group-open:opacity-100"
-      >
-        {label}
-      </span>
-    </details>
-  );
-}
 
 function GuestCountSelect({ defaultValue = 0, maxGuests = 5 }) {
   return (
@@ -295,21 +273,21 @@ export default async function EventDetailPage({ params, searchParams }) {
                         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:block sm:space-y-1">
                           {game.year_published && (
                             <div className="flex items-center gap-1 sm:gap-1.5">
-                              <GameFactIcon icon={CalendarDays} label="Published" />
+                              <GameFactIcon icon="calendar" label="Published" />
                               <span className="sr-only">Published:</span>
                               {game.year_published}
                             </div>
                           )}
                           {game.min_players && game.max_players && (
                             <div className="flex items-center gap-1 sm:gap-1.5">
-                              <GameFactIcon icon={Users} label="Players" />
+                              <GameFactIcon icon="users" label="Players" />
                               <span className="sr-only">Players:</span>
                               {game.min_players}–{game.max_players} players
                             </div>
                           )}
                           {game.playtime_minutes && (
                             <div className="flex items-center gap-1 sm:gap-1.5">
-                              <GameFactIcon icon={Clock} label="Play time" />
+                              <GameFactIcon icon="clock" label="Play time" />
                               <span className="sr-only">Play time:</span>
                               {game.playtime_minutes} minutes
                             </div>
@@ -318,14 +296,14 @@ export default async function EventDetailPage({ params, searchParams }) {
                         <div className="flex items-center justify-center gap-4 sm:block sm:space-y-1">
                           {game.weight && (
                             <div className="flex items-center gap-1 sm:gap-1.5">
-                              <GameFactIcon icon={Gauge} label="Complexity" />
+                              <GameFactIcon icon="gauge" label="Complexity" />
                               <span className="sr-only">Complexity:</span>
                               {Number(game.weight).toFixed(1)}/5
                             </div>
                           )}
                           {game.weight && (
                             <div className="flex items-center gap-1 sm:gap-1.5">
-                              <GameFactIcon icon={Dumbbell} label="Weight" />
+                              <GameFactIcon icon="dumbbell" label="Weight" />
                               <span className="sr-only">Weight:</span>
                               {Number(game.weight).toFixed(1)}/5
                             </div>
