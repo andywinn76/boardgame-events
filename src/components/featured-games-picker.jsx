@@ -25,7 +25,7 @@ function FeaturedGamesInfo() {
         role="tooltip"
         className="pointer-events-none absolute top-full left-1/2 z-10 mt-2 hidden w-64 -translate-x-1/2 rounded-lg bg-foreground px-3 py-2 text-xs font-normal leading-relaxed text-background shadow-lg group-hover:block group-focus-within:block"
       >
-        Featured games will let hosts highlight up to five planned games using BoardGameGeek details and box art. BoardGameGeek API access is still pending.
+        Featured games let hosts highlight up to five planned games using BoardGameGeek details, complexity ratings, and box art.
       </span>
     </span>
   );
@@ -94,7 +94,7 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
       <legend className="px-1 text-sm font-medium text-foreground">
         <span className="inline-flex items-center gap-1.5">
           <span>
-            Featured games <span className="font-normal text-muted-foreground">(optional, coming soon)</span>
+            Featured games <span className="font-normal text-muted-foreground">(optional)</span>
           </span>
           <FeaturedGamesInfo />
         </span>
@@ -143,7 +143,16 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">{game.name}</p>
-                    {game.year_published && <p className="text-xs text-muted-foreground">{game.year_published}</p>}
+                    {(game.year_published || game.weight) && (
+                      <p className="text-xs text-muted-foreground">
+                        {[
+                          game.year_published,
+                          game.weight ? `Complexity / weight ${Number(game.weight).toFixed(1)} / 5` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    )}
                   </div>
                   <Button
                     type="button"

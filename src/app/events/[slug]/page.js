@@ -1,7 +1,19 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, ExternalLink, Pencil, Settings, Users, MessageSquare, Flag } from 'lucide-react';
+import {
+  CalendarDays,
+  Clock,
+  Dumbbell,
+  ExternalLink,
+  Flag,
+  Gauge,
+  MapPin,
+  MessageSquare,
+  Pencil,
+  Settings,
+  Users,
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { formatEventTime } from '@/lib/dates';
 import { venueMapUrl, coarseMapUrl } from '@/lib/maps';
@@ -240,37 +252,82 @@ export default async function EventDetailPage({ params, searchParams }) {
             <h2 className="font-heading text-xl font-bold text-foreground">Featured Games</h2>
             <p className="mt-1 text-sm text-muted-foreground">Games the organizer is planning to bring to the table.</p>
           </div>
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid max-w-lg gap-3">
             {featuredGames.map(({ games: game }) => (
               <li key={game.bgg_id}>
                 <Card className="h-full">
-                  <CardContent className="flex h-full gap-3">
-                    {game.thumbnail_url || game.image_url ? (
-                      <Image
-                        src={game.thumbnail_url || game.image_url}
-                        alt={`${game.name} box art`}
-                        width={80}
-                        height={80}
-                        className="size-20 shrink-0 rounded-md object-contain"
-                      />
-                    ) : (
-                      <div className="size-20 shrink-0 rounded-md bg-muted" aria-hidden="true" />
-                    )}
-                    <div className="min-w-0">
-                      <h3 className="font-heading font-semibold text-foreground">{game.name}</h3>
-                      {game.year_published && <p className="text-xs text-muted-foreground">{game.year_published}</p>}
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {game.min_players && game.max_players
-                          ? `${game.min_players}–${game.max_players} players`
-                          : null}
-                        {game.playtime_minutes ? ` · ${game.playtime_minutes} min` : ''}
-                        {game.weight ? ` · Weight ${Number(game.weight).toFixed(1)}` : ''}
-                      </p>
+                  <CardContent className="flex h-full flex-col gap-4 sm:flex-row">
+                    <div className="flex shrink-0 flex-col items-center gap-3 sm:w-[200px]">
+                      {game.thumbnail_url || game.image_url ? (
+                        <Image
+                          src={game.image_url || game.thumbnail_url}
+                          alt={`${game.name} box art`}
+                          width={200}
+                          height={200}
+                          className="size-[200px] rounded-lg object-contain"
+                        />
+                      ) : (
+                        <div className="size-[200px] rounded-lg bg-muted" aria-hidden="true" />
+                      )}
+                      <a
+                        href="https://boardgamegeek.com"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        aria-label="Powered by BoardGameGeek"
+                      >
+                        <Image
+                          src="https://cf.geekdo-images.com/HZy35cmzmmyV9BarSuk6ug__small/img/gbE7sulIurZE_Tx8EQJXnZSKI6w=/fit-in/200x150/filters:strip_icc()/pic7779581.png"
+                          alt="Powered by BoardGameGeek"
+                          width={128}
+                          height={38}
+                          className="h-auto w-32"
+                        />
+                      </a>
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <h3 className="font-heading text-[21px] font-semibold leading-tight text-foreground">{game.name}</h3>
+                      <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                        {game.year_published && (
+                          <p className="flex items-center gap-2" title="Published">
+                            <CalendarDays className="size-4 shrink-0" aria-hidden="true" />
+                            <span className="sr-only">Published:</span>
+                            {game.year_published}
+                          </p>
+                        )}
+                        {game.min_players && game.max_players && (
+                          <p className="flex items-center gap-2" title="Players">
+                            <Users className="size-4 shrink-0" aria-hidden="true" />
+                            <span className="sr-only">Players:</span>
+                            {game.min_players}–{game.max_players} players
+                          </p>
+                        )}
+                        {game.playtime_minutes && (
+                          <p className="flex items-center gap-2" title="Play time">
+                            <Clock className="size-4 shrink-0" aria-hidden="true" />
+                            <span className="sr-only">Play time:</span>
+                            {game.playtime_minutes} minutes
+                          </p>
+                        )}
+                        {game.weight && (
+                          <p className="flex items-center gap-2" title="Complexity">
+                            <Gauge className="size-4 shrink-0" aria-hidden="true" />
+                            <span className="sr-only">Complexity:</span>
+                            {Number(game.weight).toFixed(1)}/5
+                          </p>
+                        )}
+                        {game.weight && (
+                          <p className="flex items-center gap-2" title="Weight">
+                            <Dumbbell className="size-4 shrink-0" aria-hidden="true" />
+                            <span className="sr-only">Weight:</span>
+                            {Number(game.weight).toFixed(1)}/5
+                          </p>
+                        )}
+                      </div>
                       <a
                         href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
                         target="_blank"
                         rel="noreferrer noopener"
-                        className="mt-2 inline-block text-xs font-medium text-primary underline underline-offset-2"
+                        className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-2"
                       >
                         View on BoardGameGeek
                       </a>

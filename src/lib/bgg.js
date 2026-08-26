@@ -83,7 +83,7 @@ export async function getBggGames(ids) {
     const body = match[2];
     const nameTag = body.match(/<name\b[^>]*type="primary"[^>]*\/>/);
     const name = nameTag ? attribute(nameTag[0], 'value') : '';
-    const ratingBody = body.match(/<ratings>([\s\S]*?)<\/ratings>/)?.[1] || '';
+    const ratingBody = body.match(/<ratings\b[^>]*>([\s\S]*?)<\/ratings>/)?.[1] || '';
     if (!bggId || !name) continue;
 
     games.push({
