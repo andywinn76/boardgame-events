@@ -284,50 +284,54 @@ export default async function EventDetailPage({ params, searchParams }) {
                         />
                       </a>
                     </div>
-                    <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="flex min-w-0 flex-1 flex-col items-center text-center sm:items-stretch sm:text-left">
                       <h3 className="font-heading text-[21px] font-semibold leading-tight text-foreground">{game.name}</h3>
-                      <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                        {game.year_published && (
-                          <p className="flex items-center gap-2" title="Published">
-                            <CalendarDays className="size-4 shrink-0" aria-hidden="true" />
-                            <span className="sr-only">Published:</span>
-                            {game.year_published}
-                          </p>
-                        )}
-                        {game.min_players && game.max_players && (
-                          <p className="flex items-center gap-2" title="Players">
-                            <Users className="size-4 shrink-0" aria-hidden="true" />
-                            <span className="sr-only">Players:</span>
-                            {game.min_players}–{game.max_players} players
-                          </p>
-                        )}
-                        {game.playtime_minutes && (
-                          <p className="flex items-center gap-2" title="Play time">
-                            <Clock className="size-4 shrink-0" aria-hidden="true" />
-                            <span className="sr-only">Play time:</span>
-                            {game.playtime_minutes} minutes
-                          </p>
-                        )}
-                        {game.weight && (
-                          <p className="flex items-center gap-2" title="Complexity">
-                            <Gauge className="size-4 shrink-0" aria-hidden="true" />
-                            <span className="sr-only">Complexity:</span>
-                            {Number(game.weight).toFixed(1)}/5
-                          </p>
-                        )}
-                        {game.weight && (
-                          <p className="flex items-center gap-2" title="Weight">
-                            <Dumbbell className="size-4 shrink-0" aria-hidden="true" />
-                            <span className="sr-only">Weight:</span>
-                            {Number(game.weight).toFixed(1)}/5
-                          </p>
-                        )}
+                      <div className="mt-2 space-y-2 text-sm text-muted-foreground sm:space-y-1">
+                        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:block sm:space-y-1">
+                          {game.year_published && (
+                            <p className="flex items-center gap-1.5 sm:gap-2" title="Published">
+                              <CalendarDays className="size-4 shrink-0" aria-hidden="true" />
+                              <span className="sr-only">Published:</span>
+                              {game.year_published}
+                            </p>
+                          )}
+                          {game.min_players && game.max_players && (
+                            <p className="flex items-center gap-1.5 sm:gap-2" title="Players">
+                              <Users className="size-4 shrink-0" aria-hidden="true" />
+                              <span className="sr-only">Players:</span>
+                              {game.min_players}–{game.max_players} players
+                            </p>
+                          )}
+                          {game.playtime_minutes && (
+                            <p className="flex items-center gap-1.5 sm:gap-2" title="Play time">
+                              <Clock className="size-4 shrink-0" aria-hidden="true" />
+                              <span className="sr-only">Play time:</span>
+                              {game.playtime_minutes} minutes
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-center gap-4 sm:block sm:space-y-1">
+                          {game.weight && (
+                            <p className="flex items-center gap-1.5 sm:gap-2" title="Complexity">
+                              <Gauge className="size-4 shrink-0" aria-hidden="true" />
+                              <span className="sr-only">Complexity:</span>
+                              {Number(game.weight).toFixed(1)}/5
+                            </p>
+                          )}
+                          {game.weight && (
+                            <p className="flex items-center gap-1.5 sm:gap-2" title="Weight">
+                              <Dumbbell className="size-4 shrink-0" aria-hidden="true" />
+                              <span className="sr-only">Weight:</span>
+                              {Number(game.weight).toFixed(1)}/5
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <a
                         href={`https://boardgamegeek.com/boardgame/${game.bgg_id}`}
                         target="_blank"
                         rel="noreferrer noopener"
-                        className="mt-4 inline-block text-sm font-medium text-primary underline underline-offset-2"
+                        className="mt-4 inline-block self-center text-sm font-medium text-primary underline underline-offset-2 sm:self-start"
                       >
                         View on BoardGameGeek
                       </a>
