@@ -271,12 +271,12 @@ export default async function EventDetailPage({ params, searchParams }) {
             <h2 className="font-heading text-xl font-bold text-foreground">Featured Games</h2>
             <p className="mt-1 text-sm text-muted-foreground">Games the organizer is planning to bring to the table.</p>
           </div>
-          <ul className="grid max-w-lg gap-3">
+          <ul className="mx-auto grid max-w-lg gap-3">
             {featuredGames.map(({ games: game }) => (
               <li key={game.bgg_id}>
                 <Card className="h-full">
                   <CardContent className="flex h-full flex-col gap-4 sm:flex-row">
-                    <div className="flex shrink-0 flex-col items-center gap-3 sm:w-[200px]">
+                    <div className="flex shrink-0 flex-col items-center sm:w-[200px]">
                       {game.thumbnail_url || game.image_url ? (
                         <Image
                           src={game.image_url || game.thumbnail_url}
@@ -288,20 +288,6 @@ export default async function EventDetailPage({ params, searchParams }) {
                       ) : (
                         <div className="size-[200px] rounded-lg bg-muted" aria-hidden="true" />
                       )}
-                      <a
-                        href="https://boardgamegeek.com"
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        aria-label="Powered by BoardGameGeek"
-                      >
-                        <Image
-                          src="https://cf.geekdo-images.com/HZy35cmzmmyV9BarSuk6ug__small/img/gbE7sulIurZE_Tx8EQJXnZSKI6w=/fit-in/200x150/filters:strip_icc()/pic7779581.png"
-                          alt="Powered by BoardGameGeek"
-                          width={128}
-                          height={38}
-                          className="h-auto w-32"
-                        />
-                      </a>
                     </div>
                     <div className="flex min-w-0 flex-1 flex-col items-center text-center sm:items-stretch sm:text-left">
                       <h3 className="font-heading text-[21px] font-semibold leading-tight text-foreground">{game.name}</h3>
@@ -360,13 +346,22 @@ export default async function EventDetailPage({ params, searchParams }) {
               </li>
             ))}
           </ul>
-          <p className="text-xs text-muted-foreground">
-            Game information and images provided by{' '}
-            <a href="https://boardgamegeek.com" target="_blank" rel="noreferrer noopener" className="underline underline-offset-2">
-              BoardGameGeek
+          <div className="mx-auto flex max-w-lg justify-center">
+            <a
+              href="https://boardgamegeek.com"
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label="Powered by BoardGameGeek"
+            >
+              <Image
+                src="https://cf.geekdo-images.com/HZy35cmzmmyV9BarSuk6ug__small/img/gbE7sulIurZE_Tx8EQJXnZSKI6w=/fit-in/200x150/filters:strip_icc()/pic7779581.png"
+                alt="Powered by BoardGameGeek"
+                width={128}
+                height={38}
+                className="h-auto w-32"
+              />
             </a>
-            .
-          </p>
+          </div>
         </section>
       )}
 
