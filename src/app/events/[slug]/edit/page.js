@@ -1,12 +1,13 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { formatDateTimeInput, SUPPORTED_TIMEZONES } from '@/lib/dates';
+import { formatDateTimeInput } from '@/lib/dates';
 import { updateEvent } from '../../actions';
 import { PageShell } from '@/components/page-shell';
 import { FeaturedGamesPicker } from '@/components/featured-games-picker';
 import { SeatLimitField } from '@/components/seat-limit-field';
 import { VenueMapPreview } from '@/components/venue-map-preview';
+import { EventScheduleFields } from '@/components/event-schedule-fields';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,42 +92,11 @@ export default async function EditEventPage({ params, searchParams }) {
           <Input id="title" name="title" required defaultValue={event.title} />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="starts_at">Starts</Label>
-            <Input
-              id="starts_at"
-              name="starts_at"
-              type="datetime-local"
-              step={900}
-              required
-              defaultValue={formatDateTimeInput(event.starts_at, event.timezone)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="timezone">Timezone</Label>
-            <select id="timezone" name="timezone" defaultValue={event.timezone} className={selectClass}>
-              {SUPPORTED_TIMEZONES.map((timezone) => (
-                <option key={timezone.value} value={timezone.value}>
-                  {timezone.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="ends_at">
-            Ends <span className="font-normal text-muted-foreground">(optional)</span>
-          </Label>
-          <Input
-            id="ends_at"
-            name="ends_at"
-            type="datetime-local"
-            step={900}
-            defaultValue={formatDateTimeInput(event.ends_at, event.timezone)}
-          />
-        </div>
+        <EventScheduleFields
+          defaultStartsAt={formatDateTimeInput(event.starts_at, event.timezone)}
+          defaultEndsAt={formatDateTimeInput(event.ends_at, event.timezone)}
+          defaultTimezone={event.timezone}
+        />
 
         <div className="space-y-1.5">
           <Label htmlFor="description">Description</Label>

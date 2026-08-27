@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { SUPPORTED_TIMEZONES } from '@/lib/dates';
 import { createEvent } from '../actions';
 import { PageShell } from '@/components/page-shell';
 import { Label } from '@/components/ui/label';
@@ -11,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FeaturedGamesPicker } from '@/components/featured-games-picker';
 import { SeatLimitField } from '@/components/seat-limit-field';
 import { VenueMapPreview } from '@/components/venue-map-preview';
+import { EventScheduleFields } from '@/components/event-schedule-fields';
 
 const selectClass =
   'h-8 w-full min-w-0 rounded-lg border border-input bg-card px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
@@ -52,29 +52,7 @@ export default async function NewEventPage({ searchParams }) {
           <Input id="title" name="title" type="text" required />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="starts_at">Starts</Label>
-            <Input id="starts_at" name="starts_at" type="datetime-local" step={900} required />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="timezone">Timezone</Label>
-            <select id="timezone" name="timezone" defaultValue="America/Denver" className={selectClass}>
-              {SUPPORTED_TIMEZONES.map((tz) => (
-                <option key={tz.value} value={tz.value}>
-                  {tz.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="ends_at">
-            Ends <span className="font-normal text-muted-foreground">(optional)</span>
-          </Label>
-          <Input id="ends_at" name="ends_at" type="datetime-local" step={900} />
-        </div>
+        <EventScheduleFields />
 
         <div className="space-y-1.5">
           <Label htmlFor="description">
