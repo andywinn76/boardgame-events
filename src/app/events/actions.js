@@ -279,6 +279,15 @@ export async function createEvent(formData) {
     redirect(`/events/new?error=${encodeURIComponent(error.message)}`);
   }
 
+  const { error: hostRsvpError } = await supabase.rpc('rsvp_to_event', {
+    _event: event.id,
+    _seats: 1,
+  });
+
+  if (hostRsvpError) {
+    redirect(`/events/${event.slug}?error=${encodeURIComponent(`Event created, but organizer attendance could not be saved: ${hostRsvpError.message}`)}`);
+  }
+
   if (featuredGamesEnabled) {
     const { error: featuredGamesError } = await supabase.rpc('set_event_featured_games', {
       _event: event.id,
