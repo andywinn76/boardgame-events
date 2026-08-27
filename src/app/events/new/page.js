@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FeaturedGamesPicker } from '@/components/featured-games-picker';
 import { SeatLimitField } from '@/components/seat-limit-field';
+import { VenueMapPreview } from '@/components/venue-map-preview';
 
 const selectClass =
   'h-8 w-full min-w-0 rounded-lg border border-input bg-card px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
@@ -54,7 +55,7 @@ export default async function NewEventPage({ searchParams }) {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="starts_at">Starts</Label>
-            <Input id="starts_at" name="starts_at" type="datetime-local" required />
+            <Input id="starts_at" name="starts_at" type="datetime-local" step={900} required />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="timezone">Timezone</Label>
@@ -72,7 +73,7 @@ export default async function NewEventPage({ searchParams }) {
           <Label htmlFor="ends_at">
             Ends <span className="font-normal text-muted-foreground">(optional)</span>
           </Label>
-          <Input id="ends_at" name="ends_at" type="datetime-local" />
+          <Input id="ends_at" name="ends_at" type="datetime-local" step={900} />
         </div>
 
         <div className="space-y-1.5">
@@ -180,6 +181,7 @@ export default async function NewEventPage({ searchParams }) {
                   placeholder="4th and Main St."
                 />
               </div>
+              <VenueMapPreview />
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="new_venue_lat">
@@ -232,6 +234,9 @@ export default async function NewEventPage({ searchParams }) {
             <div className="mt-3 space-y-1.5">
               <Label htmlFor="cross_streets">Cross streets</Label>
               <Input id="cross_streets" name="cross_streets" type="text" placeholder="4th and Main St." />
+            </div>
+            <div className="mt-3">
+              <VenueMapPreview type="event" />
             </div>
           </div>
         </fieldset>

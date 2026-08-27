@@ -5,6 +5,12 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { zonedInputToUtc } from '@/lib/dates';
 import { getBggGames } from '@/lib/bgg';
+import {
+  buildEventGeocodeQuery,
+  buildVenueGeocodeQuery,
+  geocodeQuery,
+  isGeocodingConfigured,
+} from '@/lib/geocoding';
 
 function slugify(title) {
   const base = title
@@ -15,6 +21,80 @@ function slugify(title) {
     .slice(0, 60);
   const suffix = crypto.randomUUID().slice(0, 8);
   return `${base}-${suffix}`;
+}
+
+function venueLocationFromForm(formData) {
+  return {
+    addressLine1: String(formData.get('new_venue_address_line1') || '').trim(),
+    addressLine2: String(formData.get('new_venue_address_line2') || '').trim(),
+    city: String(formData.get('new_venue_city') || '').trim(),
+    region: String(formData.get('new_venue_region') || '').trim(),
+    postalCode: String(formData.get('new_venue_postal_code') || '').trim(),
+    neighborhood: String(formData.get('new_venue_neighborhood') || '').trim(),
+    crossStreets: String(formData.get('new_venue_cross_streets') || '').trim(),
+  };
+}
+
+function eventLocationFromForm(formData) {
+  return {
+    locationLabel: String(formData.get('location_label') || '').trim(),
+    neighborhood: String(formData.get('neighborhood') || '').trim(),
+    crossStreets: String(formData.get('cross_streets') || '').trim(),
+    city: String(formData.get('city') || '').trim(),
+    region: String(formData.get('region') || '').trim(),
+  };
+}
+
+function manualCoordinatesFromForm(formData) {
+  const latRaw = String(formData.get('new_venue_lat') || '').trim();
+  const lngRaw = String(formData.get('new_venue_lng') || '').trim();
+  if (!latRaw && !lngRaw) return null;
+  if (!latRaw || !lngRaw) throw new Error('Enter both latitude and longitude, or leave both blank.');
+
+  const lat = Number(latRaw);
+  const lng = Number(lngRaw);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    throw new Error('Enter valid latitude and longitude coordinates.');
+  }
+  return { lat, lng, placeId: null };
+}
+
+async function geocodeWhenConfigured(query) {
+  if (!query || !isGeocodingConfigured()) return null;
+  const result = await geocodeQuery(query);
+  if (!result) {
+    throw new Error('No map location was found. Check the address, city, and state or region.');
+  }
+  return result;
+}
+
+async function geocodeSavedVenueIfNeeded(supabase, venueId, userId) {
+  if (!venueId || !isGeocodingConfigured()) return;
+
+  const { data: venue } = await supabase
+    .from('venues')
+    .select('id, created_by, address_line1, address_line2, city, region, postal_code, cross_streets, lat, lng')
+    .eq('id', venueId)
+    .maybeSingle();
+
+  if (!venue || venue.created_by !== userId || (venue.lat != null && venue.lng != null)) return;
+
+  const location = await geocodeWhenConfigured(buildVenueGeocodeQuery({
+    addressLine1: venue.address_line1,
+    addressLine2: venue.address_line2,
+    city: venue.city,
+    region: venue.region,
+    postalCode: venue.postal_code,
+    crossStreets: venue.cross_streets,
+  }));
+  if (!location) return;
+
+  const { error } = await supabase
+    .from('venues')
+    .update({ lat: location.lat, lng: location.lng, google_place_id: location.placeId })
+    .eq('id', venueId)
+    .eq('created_by', userId);
+  if (error) throw new Error('The saved venue coordinates could not be updated.');
 }
 
 function parseFeaturedGameIds(formData) {
@@ -103,12 +183,28 @@ export async function createEvent(formData) {
     redirect(`/events/new?error=${encodeURIComponent('Title, date/time, and timezone are required')}`);
   }
 
-  let venueId = formData.get('venue_id') || null;
+  let venueId = String(formData.get('venue_id') || '').trim() || null;
+  const eventLocation = eventLocationFromForm(formData);
+  let eventCoordinates = null;
 
-  const newVenueName = formData.get('new_venue_name');
+  if (venueId) {
+    try {
+      await geocodeSavedVenueIfNeeded(supabase, venueId, user.id);
+    } catch (geocodingError) {
+      redirect(`/events/new?error=${encodeURIComponent(geocodingError.message)}`);
+    }
+  }
+
+  const newVenueName = String(formData.get('new_venue_name') || '').trim();
   if (!venueId && newVenueName) {
-    const latRaw = formData.get('new_venue_lat');
-    const lngRaw = formData.get('new_venue_lng');
+    const venueLocation = venueLocationFromForm(formData);
+    let coordinates;
+    try {
+      coordinates = manualCoordinatesFromForm(formData)
+        || await geocodeWhenConfigured(buildVenueGeocodeQuery(venueLocation));
+    } catch (geocodingError) {
+      redirect(`/events/new?error=${encodeURIComponent(geocodingError.message)}`);
+    }
 
     const { data: venue, error: venueError } = await supabase
       .from('venues')
@@ -117,15 +213,16 @@ export async function createEvent(formData) {
         name: newVenueName,
         kind: formData.get('new_venue_kind') || 'public_venue',
         is_shared: formData.get('new_venue_is_shared') === 'on',
-        address_line1: formData.get('new_venue_address_line1') || null,
-        address_line2: formData.get('new_venue_address_line2') || null,
-        city: formData.get('new_venue_city') || null,
-        region: formData.get('new_venue_region') || null,
-        postal_code: formData.get('new_venue_postal_code') || null,
-        neighborhood: formData.get('new_venue_neighborhood') || null,
-        cross_streets: formData.get('new_venue_cross_streets') || null,
-        lat: latRaw ? Number(latRaw) : null,
-        lng: lngRaw ? Number(lngRaw) : null,
+        address_line1: venueLocation.addressLine1 || null,
+        address_line2: venueLocation.addressLine2 || null,
+        city: venueLocation.city || null,
+        region: venueLocation.region || null,
+        postal_code: venueLocation.postalCode || null,
+        neighborhood: venueLocation.neighborhood || null,
+        cross_streets: venueLocation.crossStreets || null,
+        lat: coordinates?.lat ?? null,
+        lng: coordinates?.lng ?? null,
+        google_place_id: coordinates?.placeId ?? null,
         access_notes: formData.get('new_venue_access_notes') || null,
         website: formData.get('new_venue_website') || null,
       })
@@ -137,6 +234,14 @@ export async function createEvent(formData) {
     }
 
     venueId = venue.id;
+  }
+
+  if (!venueId) {
+    try {
+      eventCoordinates = await geocodeWhenConfigured(buildEventGeocodeQuery(eventLocation));
+    } catch (geocodingError) {
+      redirect(`/events/new?error=${encodeURIComponent(geocodingError.message)}`);
+    }
   }
 
   const { data: event, error } = await supabase
@@ -152,11 +257,15 @@ export async function createEvent(formData) {
       ends_at: endsAtLocal ? zonedInputToUtc(endsAtLocal, timezone).toISOString() : null,
       timezone,
       venue_id: venueId,
-      location_label: formData.get('location_label') || null,
-      neighborhood: formData.get('neighborhood') || null,
-      cross_streets: formData.get('cross_streets') || null,
-      city: formData.get('city') || null,
-      region: formData.get('region') || null,
+      location_label: eventLocation.locationLabel || null,
+      neighborhood: eventLocation.neighborhood || null,
+      cross_streets: eventLocation.crossStreets || null,
+      city: eventLocation.city || null,
+      region: eventLocation.region || null,
+      ...(!venueId ? {
+        approx_lat: eventCoordinates?.lat ?? null,
+        approx_lng: eventCoordinates?.lng ?? null,
+      } : {}),
       seat_limit: seatLimitRaw ? Number(seatLimitRaw) : null,
       allow_waitlist: formData.get('allow_waitlist') === 'on',
       allow_plus_ones: allowPlusOnes,
@@ -235,6 +344,19 @@ export async function updateEvent(formData) {
     }
   }
 
+  const venueId = String(formData.get('venue_id') || '').trim() || null;
+  const eventLocation = eventLocationFromForm(formData);
+  let eventCoordinates = null;
+  try {
+    if (venueId) {
+      await geocodeSavedVenueIfNeeded(supabase, venueId, user.id);
+    } else {
+      eventCoordinates = await geocodeWhenConfigured(buildEventGeocodeQuery(eventLocation));
+    }
+  } catch (geocodingError) {
+    redirect(`/events/${slug}/edit?error=${encodeURIComponent(geocodingError.message)}`);
+  }
+
   const { error } = await supabase
     .from('events')
     .update({
@@ -244,12 +366,16 @@ export async function updateEvent(formData) {
       starts_at: zonedInputToUtc(startsAtLocal, timezone).toISOString(),
       ends_at: endsAtLocal ? zonedInputToUtc(endsAtLocal, timezone).toISOString() : null,
       timezone,
-      venue_id: formData.get('venue_id') || null,
-      location_label: String(formData.get('location_label') || '').trim() || null,
-      neighborhood: String(formData.get('neighborhood') || '').trim() || null,
-      cross_streets: String(formData.get('cross_streets') || '').trim() || null,
-      city: String(formData.get('city') || '').trim() || null,
-      region: String(formData.get('region') || '').trim() || null,
+      venue_id: venueId,
+      location_label: eventLocation.locationLabel || null,
+      neighborhood: eventLocation.neighborhood || null,
+      cross_streets: eventLocation.crossStreets || null,
+      city: eventLocation.city || null,
+      region: eventLocation.region || null,
+      ...(!venueId ? {
+        approx_lat: eventCoordinates?.lat ?? null,
+        approx_lng: eventCoordinates?.lng ?? null,
+      } : {}),
       seat_limit: seatLimitRaw ? Number(seatLimitRaw) : null,
       allow_waitlist: formData.get('allow_waitlist') === 'on',
       allow_plus_ones: allowPlusOnes,

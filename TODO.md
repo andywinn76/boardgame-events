@@ -1,3 +1,24 @@
 # Todo
 
-- [ ] Ask users to choose an available username during registration instead of assigning a placeholder username.
+- [x] Require users to choose an available username during new account registration instead of assigning a placeholder username.
+- [ ] Investigate personalizing Supabase authentication emails so they clearly come from the Board Game Events app.
+- [x] Fix Supabase authentication email links that incorrectly direct users to localhost.
+- [x] Add a show-password eye icon to password fields on the registration and login forms.
+- [x] Finish implementing BoardGameGeek game lookup now that the BGG API application has been approved.
+- [ ] Add guest and +1 support to RSVPs.
+  - Let hosts enable or disable guests when creating or editing an event.
+  - When enabled, let an attendee choose how many guest seats they need while RSVPing.
+  - Count the attendee and every guest against event capacity and waitlist availability.
+  - Let attendees update their guest count after RSVPing when seats remain available.
+  - Show guest-seat totals clearly on event details and in the host management view without requiring guest accounts.
+- [ ] Review and expand the Notifications experience.
+  - The page currently lists notifications, links them to events, and supports marking one or all as read.
+  - Notifications are currently created only for waitlist promotion and event cancellation, so the page is usually empty.
+  - Decide which additional events should create notifications, such as invitations, co-host changes, RSVP changes, new event messages, and upcoming-event reminders.
+  - Add an unread indicator or count to the header so users know when the page has something new.
+- [ ] Formalize a guest browsing mode for visitors who are not signed in.
+  - Let visitors browse upcoming public events and open public event detail pages.
+  - Hide or disable RSVP, host, message, report, settings, and management actions until the visitor signs in.
+  - Replace unavailable actions with a clear Log in or Sign up prompt that returns the visitor to the event afterward.
+  - Keep private addresses, attendee-only details, messages, attendee names, and other protected information hidden from visitors.
+  - Review navigation and empty states so the public experience feels intentional instead of like a signed-in page with broken actions.

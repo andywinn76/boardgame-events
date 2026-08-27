@@ -6,6 +6,7 @@ import { updateEvent } from '../../actions';
 import { PageShell } from '@/components/page-shell';
 import { FeaturedGamesPicker } from '@/components/featured-games-picker';
 import { SeatLimitField } from '@/components/seat-limit-field';
+import { VenueMapPreview } from '@/components/venue-map-preview';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,6 +98,7 @@ export default async function EditEventPage({ params, searchParams }) {
               id="starts_at"
               name="starts_at"
               type="datetime-local"
+              step={900}
               required
               defaultValue={formatDateTimeInput(event.starts_at, event.timezone)}
             />
@@ -121,6 +123,7 @@ export default async function EditEventPage({ params, searchParams }) {
             id="ends_at"
             name="ends_at"
             type="datetime-local"
+            step={900}
             defaultValue={formatDateTimeInput(event.ends_at, event.timezone)}
           />
         </div>
@@ -171,6 +174,7 @@ export default async function EditEventPage({ params, searchParams }) {
             <Label htmlFor="cross_streets">Cross streets</Label>
             <Input id="cross_streets" name="cross_streets" defaultValue={event.cross_streets || ''} />
           </div>
+          <VenueMapPreview type="event" />
         </fieldset>
 
         <fieldset className="space-y-4 rounded-xl border border-border bg-muted/30 p-4">

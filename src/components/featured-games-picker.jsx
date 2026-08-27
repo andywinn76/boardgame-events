@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { useEffect, useState } from 'react';
-import { CircleHelp, LoaderCircle, Search, X } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { CircleHelp, LoaderCircle, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { GameFactIcon } from "@/components/game-fact-icon";
 
 const MAX_FEATURED_GAMES = 5;
 
@@ -25,20 +26,24 @@ function FeaturedGamesInfo() {
         role="tooltip"
         className="pointer-events-none absolute top-full left-1/2 z-10 mt-2 hidden w-64 -translate-x-1/2 rounded-lg bg-foreground px-3 py-2 text-xs font-normal leading-relaxed text-background shadow-lg group-hover:block group-focus-within:block"
       >
-        Featured games let hosts highlight up to five planned games using BoardGameGeek details, complexity ratings, and box art.
+        This section lets hosts highlight up to five planned games using
+        BoardGameGeek details like complexity, game weight, and box art.
       </span>
     </span>
   );
 }
 
-export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] }) {
+export function FeaturedGamesPicker({
+  defaultEnabled = false,
+  initialGames = [],
+}) {
   const [enabled, setEnabled] = useState(defaultEnabled);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [selected, setSelected] = useState(initialGames);
   const [searching, setSearching] = useState(false);
   const [addingId, setAddingId] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const trimmedQuery = query.trim();
@@ -49,16 +54,20 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
     const controller = new AbortController();
     const timeout = setTimeout(async () => {
       setSearching(true);
-      setError('');
+      setError("");
       try {
-        const response = await fetch(`/api/bgg/search?q=${encodeURIComponent(trimmedQuery)}`, {
-          signal: controller.signal,
-        });
+        const response = await fetch(
+          `/api/bgg/search?q=${encodeURIComponent(trimmedQuery)}`,
+          {
+            signal: controller.signal,
+          },
+        );
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || 'Could not search BoardGameGeek.');
+        if (!response.ok)
+          throw new Error(payload.error || "Could not search BoardGameGeek.");
         setResults(payload.games || []);
       } catch (fetchError) {
-        if (fetchError.name !== 'AbortError') setError(fetchError.message);
+        if (fetchError.name !== "AbortError") setError(fetchError.message);
       } finally {
         if (!controller.signal.aborted) setSearching(false);
       }
@@ -71,16 +80,21 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
   }, [enabled, query]);
 
   async function addGame(result) {
-    if (selected.length >= MAX_FEATURED_GAMES || selected.some((game) => game.bgg_id === result.bggId)) return;
+    if (
+      selected.length >= MAX_FEATURED_GAMES ||
+      selected.some((game) => game.bgg_id === result.bggId)
+    )
+      return;
 
     setAddingId(result.bggId);
-    setError('');
+    setError("");
     try {
       const response = await fetch(`/api/bgg/games/${result.bggId}`);
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || 'Could not load that game.');
+      if (!response.ok)
+        throw new Error(payload.error || "Could not load that game.");
       setSelected((games) => [...games, payload.game]);
-      setQuery('');
+      setQuery("");
       setResults([]);
     } catch (fetchError) {
       setError(fetchError.message);
@@ -94,13 +108,20 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
       <legend className="px-1 text-sm font-medium text-foreground">
         <span className="inline-flex items-center gap-1.5">
           <span>
-            Featured games <span className="font-normal text-muted-foreground">(optional)</span>
+            Featured games{" "}
+            <span className="font-normal text-muted-foreground">
+              (optional)
+            </span>
           </span>
           <FeaturedGamesInfo />
         </span>
       </legend>
 
-      <input type="hidden" name="featured_games" value={JSON.stringify(selected.map((game) => game.bgg_id))} />
+      <input
+        type="hidden"
+        name="featured_games"
+        value={JSON.stringify(selected.map((game) => game.bgg_id))}
+      />
 
       <div className="flex items-center gap-2">
         <input
@@ -110,10 +131,10 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
           checked={enabled}
           onChange={(event) => {
             setEnabled(event.target.checked);
-            setQuery('');
+            setQuery("");
             setResults([]);
             setSearching(false);
-            setError('');
+            setError("");
           }}
           className="size-4 rounded border-input accent-primary"
         />
@@ -124,12 +145,18 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
 
       {enabled && (
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">Add up to five games. Game details and box art come from BoardGameGeek.</p>
+          <p className="text-xs text-muted-foreground">
+            Add up to five games. Game details and box art come from
+            BoardGameGeek.
+          </p>
 
           {selected.length > 0 && (
             <ul className="grid gap-2 sm:grid-cols-2">
               {selected.map((game) => (
-                <li key={game.bgg_id} className="flex items-center gap-3 rounded-lg border border-border bg-card p-2">
+                <li
+                  key={game.bgg_id}
+                  className="flex items-center gap-3 rounded-lg border border-border bg-card p-2"
+                >
                   {game.thumbnail_url ? (
                     <Image
                       src={game.thumbnail_url}
@@ -139,19 +166,33 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
                       className="size-12 rounded object-contain"
                     />
                   ) : (
-                    <div className="size-12 rounded bg-muted" aria-hidden="true" />
+                    <div
+                      className="size-12 rounded bg-muted"
+                      aria-hidden="true"
+                    />
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">{game.name}</p>
-                    {(game.year_published || game.weight) && (
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {game.name}
+                    </p>
+                    {game.year_published && (
                       <p className="text-xs text-muted-foreground">
-                        {[
-                          game.year_published,
-                          game.weight ? `Complexity / weight ${Number(game.weight).toFixed(1)} / 5` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
+                        {game.year_published}
                       </p>
+                    )}
+                    {game.weight && (
+                      <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-0.5">
+                          <GameFactIcon icon="gauge" label="Complexity" />
+                          <span className="sr-only">Complexity:</span>
+                          {Number(game.weight).toFixed(1)}/5
+                        </span>
+                        <span className="flex items-center gap-0.5">
+                          <GameFactIcon icon="dumbbell" label="Weight" />
+                          <span className="sr-only">Weight:</span>
+                          {Number(game.weight).toFixed(1)}/5
+                        </span>
+                      </div>
                     )}
                   </div>
                   <Button
@@ -159,7 +200,11 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
                     variant="ghost"
                     size="icon-sm"
                     aria-label={`Remove ${game.name}`}
-                    onClick={() => setSelected((games) => games.filter((item) => item.bgg_id !== game.bgg_id))}
+                    onClick={() =>
+                      setSelected((games) =>
+                        games.filter((item) => item.bgg_id !== game.bgg_id),
+                      )
+                    }
                   >
                     <X />
                   </Button>
@@ -190,14 +235,17 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
 
           {searching && (
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <LoaderCircle className="size-3.5 animate-spin" /> Searching BoardGameGeek…
+              <LoaderCircle className="size-3.5 animate-spin" /> Searching
+              BoardGameGeek…
             </p>
           )}
 
           {!searching && results.length > 0 && (
             <ul className="max-h-56 overflow-y-auto rounded-lg border border-border bg-card p-1">
               {results.map((result) => {
-                const alreadySelected = selected.some((game) => game.bgg_id === result.bggId);
+                const alreadySelected = selected.some(
+                  (game) => game.bgg_id === result.bggId,
+                );
                 return (
                   <li key={result.bggId}>
                     <button
@@ -208,7 +256,9 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
                     >
                       <span>{result.name}</span>
                       <span className="ml-3 shrink-0 text-xs text-muted-foreground">
-                        {addingId === result.bggId ? 'Loading…' : result.yearPublished || 'Year unknown'}
+                        {addingId === result.bggId
+                          ? "Loading…"
+                          : result.yearPublished || "Year unknown"}
                       </span>
                     </button>
                   </li>
@@ -220,8 +270,13 @@ export function FeaturedGamesPicker({ defaultEnabled = false, initialGames = [] 
           {error && <p className="text-xs text-destructive">{error}</p>}
 
           <p className="text-xs text-muted-foreground">
-            {selected.length} of {MAX_FEATURED_GAMES} selected ·{' '}
-            <a href="https://boardgamegeek.com" target="_blank" rel="noreferrer noopener" className="underline underline-offset-2">
+            {selected.length} of {MAX_FEATURED_GAMES} selected ·{" "}
+            <a
+              href="https://boardgamegeek.com"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="underline underline-offset-2"
+            >
               Game data from BoardGameGeek
             </a>
           </p>

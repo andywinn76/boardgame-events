@@ -190,7 +190,7 @@ export default async function EventDetailPage({ params, searchParams }) {
       {(event.location_label || event.neighborhood || event.cross_streets || event.city) && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <CardTitle className="flex items-center gap-1.5 text-lg text-muted-foreground">
               <MapPin className="size-4" />
               Location
             </CardTitle>
@@ -247,7 +247,7 @@ export default async function EventDetailPage({ params, searchParams }) {
       {event.featured_games_enabled && featuredGames?.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <CardTitle className="flex items-center gap-1.5 text-lg text-muted-foreground">
               <Dices className="size-4" aria-hidden="true" />
               Featured Games
             </CardTitle>
@@ -351,7 +351,7 @@ export default async function EventDetailPage({ params, searchParams }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <CardTitle className="flex items-center gap-1.5 text-lg text-muted-foreground">
             <Users className="size-4" />
             Attendees
           </CardTitle>
@@ -462,7 +462,7 @@ export default async function EventDetailPage({ params, searchParams }) {
             <Card className="px-(--card-spacing)">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-foreground">You&rsquo;re on the waitlist</p>
+                  <p className="font-heading text-lg font-semibold text-foreground">You&rsquo;re on the waitlist</p>
                   <p className="text-xs text-muted-foreground">
                     Waiting for {myRsvp.seats_claimed} {myRsvp.seats_claimed === 1 ? 'seat' : 'seats'}.
                   </p>
@@ -512,7 +512,7 @@ export default async function EventDetailPage({ params, searchParams }) {
       {canViewPrivateDetails && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <CardTitle className="flex items-center gap-1.5 text-lg text-muted-foreground">
               <MessageSquare className="size-4" />
               Messages
             </CardTitle>

@@ -44,7 +44,7 @@ function EventSection({ title, events, emptyText, emptyAction, emptyHref, viewAl
   return (
     <Card className="h-full">
       <CardHeader className="flex-row items-baseline justify-between gap-3">
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-xl">{title}</CardTitle>
         <span className="shrink-0 text-xs text-muted-foreground">
           {events.length} upcoming
         </span>
@@ -140,7 +140,7 @@ export default async function Home() {
           <h1 className="font-heading text-4xl font-extrabold tracking-tight text-foreground">
             Board Game Events
           </h1>
-          <p className="mt-2 text-muted-foreground">Find your next game night, or host one yourself.</p>
+          <p className="mt-2 text-lg text-muted-foreground">Find your next game night, or host one yourself.</p>
         </div>
 
         {user ? (
