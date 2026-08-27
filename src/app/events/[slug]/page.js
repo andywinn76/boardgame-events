@@ -4,6 +4,7 @@ import Image from 'next/image';
 import {
   ExternalLink,
   Flag,
+  Dices,
   MapPin,
   MessageSquare,
   Pencil,
@@ -173,7 +174,7 @@ export default async function EventDetailPage({ params, searchParams }) {
       )}
 
       {event.description && (
-        <Card className="bg-primary/5 ring-primary/20">
+        <Card className="bg-sky-50/80 ring-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg text-foreground">
               <MessageSquare className="size-5 text-primary" />
@@ -244,15 +245,19 @@ export default async function EventDetailPage({ params, searchParams }) {
       )}
 
       {event.featured_games_enabled && featuredGames?.length > 0 && (
-        <section className="space-y-3">
-          <div>
-            <h2 className="font-heading text-xl font-bold text-foreground">Featured Games</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Games the organizer is planning to bring to the table.</p>
-          </div>
-          <ul className="mx-auto grid max-w-lg gap-3">
-            {featuredGames.map(({ games: game }) => (
-              <li key={game.bgg_id}>
-                <Card className="h-full">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Dices className="size-4" aria-hidden="true" />
+              Featured Games
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">Games the organizer is planning to bring to the table.</p>
+            <ul className="mx-auto grid max-w-lg gap-3">
+              {featuredGames.map(({ games: game }) => (
+                <li key={game.bgg_id}>
+                  <Card className="h-full bg-muted/40">
                   <CardContent className="flex h-full flex-col gap-4 sm:flex-row">
                     <div className="flex shrink-0 flex-col items-center sm:w-[200px]">
                       {game.thumbnail_url || game.image_url ? (
@@ -320,27 +325,28 @@ export default async function EventDetailPage({ params, searchParams }) {
                       </a>
                     </div>
                   </CardContent>
-                </Card>
-              </li>
-            ))}
-          </ul>
-          <div className="mx-auto flex max-w-lg justify-center">
-            <a
-              href="https://boardgamegeek.com"
-              target="_blank"
-              rel="noreferrer noopener"
-              aria-label="Powered by BoardGameGeek"
-            >
-              <Image
-                src="https://cf.geekdo-images.com/HZy35cmzmmyV9BarSuk6ug__small/img/gbE7sulIurZE_Tx8EQJXnZSKI6w=/fit-in/200x150/filters:strip_icc()/pic7779581.png"
-                alt="Powered by BoardGameGeek"
-                width={128}
-                height={38}
-                className="h-auto w-32"
-              />
-            </a>
-          </div>
-        </section>
+                  </Card>
+                </li>
+              ))}
+            </ul>
+            <div className="mx-auto flex max-w-lg justify-center">
+              <a
+                href="https://boardgamegeek.com"
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label="Powered by BoardGameGeek"
+              >
+                <Image
+                  src="https://cf.geekdo-images.com/HZy35cmzmmyV9BarSuk6ug__small/img/gbE7sulIurZE_Tx8EQJXnZSKI6w=/fit-in/200x150/filters:strip_icc()/pic7779581.png"
+                  alt="Powered by BoardGameGeek"
+                  width={128}
+                  height={38}
+                  className="h-auto w-32"
+                />
+              </a>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <Card>
@@ -482,17 +488,19 @@ export default async function EventDetailPage({ params, searchParams }) {
           )}
 
           {user && !activeStatus && (isFull ? event.allow_waitlist : true) && (
-            <form action={rsvpToEvent} className="flex flex-wrap items-center gap-2">
-              <input type="hidden" name="event_id" value={event.id} />
-              <input type="hidden" name="slug" value={slug} />
-              {event.allow_plus_ones && <GuestCountSelect maxGuests={event.max_guests_per_rsvp} />}
-              <Button type="submit">
-                {isFull ? 'Join waitlist' : 'RSVP'}
-              </Button>
-              {event.allow_plus_ones && (
-                <p className="w-full text-xs text-muted-foreground">You and each guest claim one seat.</p>
-              )}
-            </form>
+            <Card className="px-(--card-spacing)">
+              <form action={rsvpToEvent} className="flex flex-wrap items-center gap-2">
+                <input type="hidden" name="event_id" value={event.id} />
+                <input type="hidden" name="slug" value={slug} />
+                {event.allow_plus_ones && <GuestCountSelect maxGuests={event.max_guests_per_rsvp} />}
+                <Button type="submit">
+                  {isFull ? 'Join waitlist' : 'RSVP'}
+                </Button>
+                {event.allow_plus_ones && (
+                  <p className="w-full text-xs text-muted-foreground">You and each guest claim one seat.</p>
+                )}
+              </form>
+            </Card>
           )}
 
           {user && !activeStatus && isFull && !event.allow_waitlist && (
