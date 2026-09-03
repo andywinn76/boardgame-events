@@ -12,6 +12,7 @@ import {
   Users,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { UserAvatar } from '@/components/user-avatar';
 import { formatEventTime } from '@/lib/dates';
 import { venueMapUrl, coarseMapUrl } from '@/lib/maps';
 import { anonymousRsvpToEvent, cancelAnonymousRsvp, rsvpToEvent, cancelRsvp, postMessage, reportEvent } from '../actions';
@@ -144,7 +145,7 @@ export default async function EventDetailPage({ params, searchParams }) {
     canViewMessages
       ? supabase
           .from('event_messages')
-          .select('id, body, created_at, profiles(id, username, display_name)')
+          .select('id, body, created_at, profiles(id, username, display_name, avatar_url)')
           .eq('event_id', event.id)
           .order('created_at', { ascending: true })
       : Promise.resolve({ data: null }),
@@ -626,8 +627,13 @@ export default async function EventDetailPage({ params, searchParams }) {
             ) : (
               <ul className="space-y-3">
                 {messages.map((m) => (
-                  <li key={m.id} className="text-sm">
-                    <p>
+                  <li key={m.id} className="flex items-start gap-3">
+                    <UserAvatar
+                      avatarUrl={m.profiles?.avatar_url}
+                      name={m.profiles?.display_name || m.profiles?.username}
+                      className="mt-0.5 size-8"
+                    />
+                    <p className="min-w-0 text-base leading-relaxed">
                       <span className={`font-semibold ${m.profiles?.id === user.id ? 'text-primary' : 'text-foreground'}`}>
                         {m.profiles?.display_name || m.profiles?.username}
                       </span>{' '}

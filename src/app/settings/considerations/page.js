@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { addConsideration } from '../actions';
-import { ConsiderationCard } from '@/components/consideration-card';
+import { ConsiderationsList } from '@/components/considerations-list';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ const selectClass =
   'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
 
 export default async function ConsiderationsPage({ searchParams }) {
-  const { error } = await searchParams;
+  const { error, notice, noticeId } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -50,15 +50,11 @@ export default async function ConsiderationsPage({ searchParams }) {
         </Alert>
       )}
 
-      {considerations?.length > 0 && (
-        <ul className="space-y-2">
-          {considerations.map((c) => (
-            <li key={c.id}>
-              <ConsiderationCard consideration={c} />
-            </li>
-          ))}
-        </ul>
-      )}
+      <ConsiderationsList
+        key={noticeId || 'considerations'}
+        considerations={considerations || []}
+        initialNotice={notice === 'added' ? 'Consideration added.' : null}
+      />
 
       <Card>
         <CardContent>

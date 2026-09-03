@@ -35,8 +35,9 @@
   - Link visible member names to their profiles from event hosts, attendee lists, event messages, host-management rosters, and co-host lists.
   - Preserve guest-browsing privacy by linking attendee names only where those names are already authorized to appear.
 - [ ] Add user avatar images throughout the app.
-  - Let members upload an avatar image from profile settings.
-  - Fall back to the first character of the username, including a number when the username begins with one.
+  - Profile settings now let members crop, upload, replace, and remove an avatar image.
+  - Use the reusable orange-and-white silhouette wherever a member has no avatar.
+  - Add avatars to navigation, event hosts, attendee lists, messages, and member profile pages.
 - [ ] Return and display more BoardGameGeek matches when searching for games.
 - [ ] Add a way to view past events.
   - Decide where the entry point belongs and whether signed-out visitors, members, and hosts should see different event history.

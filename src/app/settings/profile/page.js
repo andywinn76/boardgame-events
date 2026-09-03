@@ -21,7 +21,7 @@ export default async function ProfilePage() {
         <CardTitle className="text-lg">Profile</CardTitle>
       </CardHeader>
       <CardContent>
-        <ProfileForm profile={profile} />
+        <ProfileForm profile={profile} userId={user.id} />
       </CardContent>
     </Card>
   );

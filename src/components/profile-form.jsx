@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
+import { AvatarUploader } from '@/components/avatar-uploader';
 
 const initialState = { status: 'idle', message: '', noticeId: null };
 
-export function ProfileForm({ profile }) {
+export function ProfileForm({ profile, userId }) {
   const [state, formAction, pending] = useActionState(updateProfile, initialState);
   const [firstName, setFirstName] = useState(profile?.first_name || '');
   const [lastName, setLastName] = useState(profile?.last_name || '');
@@ -74,7 +75,11 @@ export function ProfileForm({ profile }) {
         </Alert>
       )}
 
-      <form action={formAction} className={`${noticeVisible ? 'mt-4 ' : ''}space-y-4`}>
+      <div className={noticeVisible ? 'mt-4' : ''}>
+        <AvatarUploader userId={userId} initialAvatarUrl={profile?.avatar_url} />
+      </div>
+
+      <form action={formAction} className="mt-5 space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="first_name">First name</Label>

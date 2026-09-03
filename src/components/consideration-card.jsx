@@ -44,8 +44,9 @@ const severitySelectStyle = {
   '3': { backgroundColor: '#fee2e2', color: '#991b1b' },
 };
 
-export function ConsiderationCard({ consideration }) {
+export function ConsiderationCard({ consideration, onNotice }) {
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState({
     kind: consideration.kind,
     severity: consideration.severity == null ? '' : String(consideration.severity),
@@ -72,6 +73,22 @@ export function ConsiderationCard({ consideration }) {
       });
     }
     setEditing((value) => !value);
+  }
+
+  async function saveChanges(formData) {
+    setSaving(true);
+    try {
+      await updateConsideration(formData);
+      setEditing(false);
+      onNotice('Changes saved.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteItem(formData) {
+    await deleteConsideration(formData);
+    onNotice('Consideration deleted.');
   }
 
   return (
@@ -102,7 +119,7 @@ export function ConsiderationCard({ consideration }) {
             >
               <Pencil className="size-4" />
             </button>
-            <form action={deleteConsideration}>
+            <form action={deleteItem}>
               <input type="hidden" name="id" value={consideration.id} />
               <button
                 type="submit"
@@ -117,7 +134,7 @@ export function ConsiderationCard({ consideration }) {
         </div>
 
         {editing && (
-          <form action={updateConsideration} className="space-y-4 border-t border-border pt-4">
+          <form action={saveChanges} className="space-y-4 border-t border-border pt-4">
             <input type="hidden" name="id" value={consideration.id} />
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -190,8 +207,10 @@ export function ConsiderationCard({ consideration }) {
               </select>
             </div>
             <div className="flex gap-2">
-              <Button type="submit" disabled={!changed}>Save changes</Button>
-              <Button type="button" variant="ghost" disabled={!changed} onClick={() => setEditing(false)}>
+              <Button type="submit" disabled={!changed || saving}>
+                {saving ? 'Saving…' : 'Save changes'}
+              </Button>
+              <Button type="button" variant="ghost" disabled={saving} onClick={() => setEditing(false)}>
                 Cancel
               </Button>
             </div>

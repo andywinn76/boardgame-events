@@ -141,7 +141,7 @@ export async function addConsideration(formData) {
   }
 
   revalidatePath('/settings/considerations');
-  redirect('/settings/considerations');
+  redirect(`/settings/considerations?notice=added&noticeId=${crypto.randomUUID()}`);
 }
 
 export async function deleteConsideration(formData) {
@@ -156,7 +156,15 @@ export async function deleteConsideration(formData) {
 
   const id = formData.get('id');
 
-  await supabase.from('user_considerations').delete().eq('id', id);
+  const { error } = await supabase
+    .from('user_considerations')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
 
   revalidatePath('/settings/considerations');
 }
