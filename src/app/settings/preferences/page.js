@@ -61,6 +61,19 @@ export default async function PreferencesPage({ searchParams }) {
 
   const host = headersList.get('host');
   const feedUrl = `${host?.startsWith('localhost') ? 'http' : 'https'}://${host}/api/ics/me?token=${icsToken}`;
+  const preferencesFormKey = JSON.stringify([
+    prefs?.preferred_weight_min ?? '',
+    prefs?.preferred_weight_max ?? '',
+    prefs?.max_playtime_minutes ?? '',
+    prefs?.preferred_player_min ?? '',
+    prefs?.preferred_player_max ?? '',
+    milesFromKilometers(prefs?.travel_radius_km),
+    prefs?.teaching_ok ?? true,
+    prefs?.new_to_hobby ?? false,
+    prefs?.notify_email ?? true,
+    prefs?.notify_new_nearby ?? false,
+    prefs?.default_share_scope || 'hosts_only',
+  ]);
 
   return (
     <>
@@ -78,7 +91,7 @@ export default async function PreferencesPage({ searchParams }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={updatePreferences} className="space-y-4">
+          <form key={preferencesFormKey} action={updatePreferences} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
@@ -236,7 +249,7 @@ export default async function PreferencesPage({ searchParams }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-1.5 text-lg text-foreground">
             <CalendarClock className="size-4" />
@@ -268,6 +281,7 @@ export default async function PreferencesPage({ searchParams }) {
           </p>
         </CardContent>
       </Card>
+
     </>
   );
 }

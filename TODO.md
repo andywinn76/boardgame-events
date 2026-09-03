@@ -43,3 +43,4 @@
 - [ ] Decide whether hosts should be able to share saved venues with other hosts.
   - If enabled, scope shared venue discovery geographically so hosts only see useful nearby venues rather than irrelevant results from other countries or regions.
   - Define privacy, moderation, duplicate-venue, and venue-owner update rules before exposing shared venues.
+- [ ] Consider bringing the calendar feed back to the user preferences section.
