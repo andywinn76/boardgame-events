@@ -172,17 +172,17 @@ export default async function EventDetailPage({ params, searchParams }) {
       </div>
 
       {reported && (
-        <DismissibleNotice>Thanks. This event has been reported to the moderation team.</DismissibleNotice>
+        <DismissibleNotice clearParams={['reported']}>Thanks. This event has been reported to the moderation team.</DismissibleNotice>
       )}
 
       {updated === 'event' && (
-        <DismissibleNotice>Your event has been updated.</DismissibleNotice>
+        <DismissibleNotice clearParams={['updated']}>Your event has been updated.</DismissibleNotice>
       )}
       {guestRsvp === 'confirmed' && (
-        <DismissibleNotice>Your guest RSVP has been saved.</DismissibleNotice>
+        <DismissibleNotice clearParams={['guest_rsvp']}>Your guest RSVP has been saved.</DismissibleNotice>
       )}
       {guestRsvp === 'cancelled' && (
-        <DismissibleNotice>Your guest RSVP was cancelled.</DismissibleNotice>
+        <DismissibleNotice clearParams={['guest_rsvp']}>Your guest RSVP was cancelled.</DismissibleNotice>
       )}
 
       {event.description && (
@@ -250,7 +250,9 @@ export default async function EventDetailPage({ params, searchParams }) {
             </div>
 
             {event.venue_id && !venue && (
-              <p className="text-xs text-muted-foreground/80">RSVP to see the exact address.</p>
+              <p className="text-xs text-muted-foreground/80">
+                {user ? 'RSVP to see the exact address.' : 'Log in and RSVP to see the exact address.'}
+              </p>
             )}
           </CardContent>
         </Card>

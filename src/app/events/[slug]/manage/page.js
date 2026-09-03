@@ -130,7 +130,7 @@ export default async function ManageEventPage({ params, searchParams }) {
         </Alert>
       )}
       {removed && (
-        <DismissibleNotice>
+        <DismissibleNotice clearParams={['removed']}>
           The registration was removed and any available seat was offered to the waitlist.
         </DismissibleNotice>
       )}

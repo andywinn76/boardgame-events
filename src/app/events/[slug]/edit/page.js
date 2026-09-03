@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { AnonymousRsvpOption } from '@/components/anonymous-rsvp-option';
 
 const selectClass =
   'h-8 w-full min-w-0 rounded-lg border border-input bg-card px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
@@ -48,7 +49,7 @@ export default async function EditEventPage({ params, searchParams }) {
   if (event.venue_id) venueFilter.push(`id.eq.${event.venue_id}`);
 
   const [{ data: venues }, { data: eventGames }] = await Promise.all([
-    supabase.from('venues').select('id, name, city, region').or(venueFilter.join(',')).order('name'),
+    supabase.from('venues').select('id, name, city, region, kind').or(venueFilter.join(',')).order('name'),
     event.featured_games_enabled
       ? supabase
           .from('event_games')
@@ -152,21 +153,10 @@ export default async function EditEventPage({ params, searchParams }) {
 
           <SeatLimitField defaultValue={event.seat_limit} />
 
-          <div className="flex items-center gap-2">
-            <input
-              id="allow_anonymous_rsvps"
-              name="allow_anonymous_rsvps"
-              type="checkbox"
-              defaultChecked={event.allow_anonymous_rsvps}
-              className="size-4 rounded border-input accent-primary"
-            />
-            <Label htmlFor="allow_anonymous_rsvps" className="font-normal">
-              Allow people without an account to RSVP
-            </Label>
-          </div>
-          <p className="-mt-2 ml-6 text-xs text-muted-foreground">
-            Unregistered users may RSVP with a first name and last initial. Not recommended for public events.
-          </p>
+          <AnonymousRsvpOption
+            privateVenueIds={(venues || []).filter((venue) => venue.kind === 'private_residence').map((venue) => venue.id)}
+            defaultChecked={event.allow_anonymous_rsvps}
+          />
 
           <div className="flex items-center gap-2">
             <input

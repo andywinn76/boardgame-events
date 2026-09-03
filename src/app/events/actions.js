@@ -214,7 +214,7 @@ export async function createEvent(formData) {
         created_by: user.id,
         name: newVenueName,
         kind: formData.get('new_venue_kind') || 'public_venue',
-        is_shared: formData.get('new_venue_is_shared') === 'on',
+        is_shared: false,
         address_line1: venueLocation.addressLine1 || null,
         address_line2: venueLocation.addressLine2 || null,
         city: venueLocation.city || null,

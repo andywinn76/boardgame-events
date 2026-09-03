@@ -1,11 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
 
-export function DismissibleNotice({ children }) {
+export function DismissibleNotice({ children, clearParams = [] }) {
   const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    let changed = false;
+    clearParams.forEach((param) => {
+      if (url.searchParams.has(param)) {
+        url.searchParams.delete(param);
+        changed = true;
+      }
+    });
+    if (changed) window.history.replaceState(window.history.state, '', url);
+  }, [clearParams]);
 
   if (!visible) return null;
 

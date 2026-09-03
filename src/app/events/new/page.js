@@ -11,6 +11,7 @@ import { FeaturedGamesPicker } from '@/components/featured-games-picker';
 import { SeatLimitField } from '@/components/seat-limit-field';
 import { VenueMapPreview } from '@/components/venue-map-preview';
 import { EventScheduleFields } from '@/components/event-schedule-fields';
+import { AnonymousRsvpOption } from '@/components/anonymous-rsvp-option';
 
 const selectClass =
   'h-8 w-full min-w-0 rounded-lg border border-input bg-card px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
@@ -29,7 +30,7 @@ export default async function NewEventPage({ searchParams }) {
 
   const { data: savedVenues } = await supabase
     .from('venues')
-    .select('id, name, city, region')
+    .select('id, name, city, region, kind')
     .eq('created_by', user.id)
     .order('name');
 
@@ -96,8 +97,7 @@ export default async function NewEventPage({ searchParams }) {
                 <Label htmlFor="new_venue_name">Venue name</Label>
                 <Input id="new_venue_name" name="new_venue_name" type="text" placeholder="Meeple Mountain Café" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+              <div className="space-y-1.5">
                   <Label htmlFor="new_venue_kind">Kind</Label>
                   <select id="new_venue_kind" name="new_venue_kind" defaultValue="public_venue" className={selectClass}>
                     <option value="public_venue">Public venue</option>
@@ -105,20 +105,6 @@ export default async function NewEventPage({ searchParams }) {
                     <option value="online">Online</option>
                     <option value="other">Other</option>
                   </select>
-                </div>
-                <div className="flex items-end pb-1.5">
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="new_venue_is_shared"
-                      name="new_venue_is_shared"
-                      type="checkbox"
-                      className="size-4 rounded border-input accent-primary"
-                    />
-                    <Label htmlFor="new_venue_is_shared" className="font-normal">
-                      Share this public venue with other hosts
-                    </Label>
-                  </div>
-                </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="new_venue_address_line1">Street address</Label>
@@ -224,20 +210,10 @@ export default async function NewEventPage({ searchParams }) {
 
           <SeatLimitField />
 
-          <div className="flex items-center gap-2">
-            <input
-              id="allow_anonymous_rsvps"
-              name="allow_anonymous_rsvps"
-              type="checkbox"
-              className="size-4 rounded border-input accent-primary"
-            />
-            <Label htmlFor="allow_anonymous_rsvps" className="font-normal">
-              Allow people without an account to RSVP
-            </Label>
-          </div>
-          <p className="-mt-2 ml-6 text-xs text-muted-foreground">
-            Unregistered users may RSVP with a first name and last initial. Not recommended for public events.
-          </p>
+          <AnonymousRsvpOption
+            privateVenueIds={(savedVenues || []).filter((venue) => venue.kind === 'private_residence').map((venue) => venue.id)}
+            watchNewVenue
+          />
 
           <div className="flex items-center gap-2">
             <input
