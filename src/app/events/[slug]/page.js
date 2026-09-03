@@ -42,6 +42,41 @@ function GuestCountSelect({ defaultValue = 0, maxGuests = 5 }) {
   );
 }
 
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
+  const supabase = await createClient();
+  const { data: event } = await supabase
+    .from('events')
+    .select('title, description, starts_at, timezone, location_label, city, region')
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (!event) return { title: 'Event | Board Game Events' };
+
+  const time = formatEventTime(event.starts_at, event.timezone);
+  const location = [event.location_label, [event.city, event.region].filter(Boolean).join(', ')]
+    .filter(Boolean)
+    .join(' · ');
+  const description = [time, location, event.description].filter(Boolean).join(' — ').slice(0, 200);
+
+  return {
+    title: `${event.title} | Board Game Events`,
+    description,
+    openGraph: {
+      title: event.title,
+      description,
+      type: 'website',
+      images: [{ url: '/banner.png', width: 1536, height: 1024, alt: 'Board Game Events' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: event.title,
+      description,
+      images: ['/banner.png'],
+    },
+  };
+}
+
 export default async function EventDetailPage({ params, searchParams }) {
   const { slug } = await params;
   const { error, reported, updated, guest_rsvp: guestRsvp } = await searchParams;
@@ -95,23 +130,25 @@ export default async function EventDetailPage({ params, searchParams }) {
   const canViewPrivateDetails = isHost || activeStatus === 'going' || anonymousRsvp?.status === 'going';
   const canViewMessages = isHost || activeStatus === 'going';
 
-  const [{ data: attendeeNames }, { data: venue }, { data: messages }] = canViewPrivateDetails
-    ? await Promise.all([
-        anonymousRsvp
-          ? supabase.rpc('anonymous_event_attendee_names', { _event: event.id, _access_token: guestAccessToken })
-          : supabase.rpc('event_attendee_names', { _event: event.id }),
-        event.venue_id
-          ? anonymousRsvp
-            ? supabase.rpc('anonymous_event_venue_details', { _event: event.id, _access_token: guestAccessToken }).maybeSingle()
-            : supabase.rpc('event_venue_details', { _event: event.id }).maybeSingle()
-          : Promise.resolve({ data: null }),
-        canViewMessages ? supabase
+  const [{ data: attendeeNames }, { data: venue }, { data: messages }] = await Promise.all([
+    canViewPrivateDetails
+      ? anonymousRsvp
+        ? supabase.rpc('anonymous_event_attendee_names', { _event: event.id, _access_token: guestAccessToken })
+        : supabase.rpc('event_attendee_names', { _event: event.id })
+      : Promise.resolve({ data: [] }),
+    event.venue_id
+      ? anonymousRsvp
+        ? supabase.rpc('anonymous_event_venue_details', { _event: event.id, _access_token: guestAccessToken }).maybeSingle()
+        : supabase.rpc('event_venue_details', { _event: event.id }).maybeSingle()
+      : Promise.resolve({ data: null }),
+    canViewMessages
+      ? supabase
           .from('event_messages')
           .select('id, body, created_at, profiles(id, username, display_name)')
           .eq('event_id', event.id)
-          .order('created_at', { ascending: true }) : Promise.resolve({ data: null }),
-      ])
-    : [{ data: [] }, { data: null }, { data: null }];
+          .order('created_at', { ascending: true })
+      : Promise.resolve({ data: null }),
+  ]);
 
   const confirmedAttendeeCount = attendeeNames?.length || 0;
   const confirmedGuestCount = canViewPrivateDetails

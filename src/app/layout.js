@@ -21,6 +21,7 @@ const baloo = Baloo_2({
 });
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://boardgame-events.vercel.app"),
   title: "Board Game Events",
   description: "Find your next game night.",
 };
