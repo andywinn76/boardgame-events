@@ -210,6 +210,12 @@ export function EventBrowser({ events, showInvolvementFilters = false }) {
                         {involvementLabels[event.involvement]}
                       </Badge>
                     )}
+                    {event.visibility === 'unlisted' && (
+                      <Badge variant="outline">Unlisted</Badge>
+                    )}
+                    {event.visibility === 'invite_only' && (
+                      <Badge variant="outline">Invite only</Badge>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{event.formatted_time}</p>
                   {(event.location_label || event.city) && (

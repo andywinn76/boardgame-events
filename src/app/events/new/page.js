@@ -226,6 +226,21 @@ export default async function NewEventPage({ searchParams }) {
 
           <div className="flex items-center gap-2">
             <input
+              id="allow_anonymous_rsvps"
+              name="allow_anonymous_rsvps"
+              type="checkbox"
+              className="size-4 rounded border-input accent-primary"
+            />
+            <Label htmlFor="allow_anonymous_rsvps" className="font-normal">
+              Allow people without an account to RSVP
+            </Label>
+          </div>
+          <p className="-mt-2 ml-6 text-xs text-muted-foreground">
+            Unregistered users may RSVP with a first name and last initial. Not recommended for public events.
+          </p>
+
+          <div className="flex items-center gap-2">
+            <input
               id="allow_waitlist"
               name="allow_waitlist"
               type="checkbox"

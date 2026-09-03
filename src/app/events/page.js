@@ -11,39 +11,50 @@ export default async function EventsPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: events } = await supabase
+
+  const { data: hostRows } = user
+    ? await supabase.from('event_hosts').select('event_id').eq('user_id', user.id)
+    : { data: [] };
+  const myHostRows = hostRows || [];
+  const hostedEventIds = myHostRows.map((hostRow) => hostRow.event_id);
+
+  let eventsQuery = supabase
     .from('events')
-    .select('id, slug, title, starts_at, timezone, location_label, city, region, seat_limit, approx_lat, approx_lng')
+    .select('id, slug, title, starts_at, timezone, location_label, city, region, seat_limit, approx_lat, approx_lng, visibility')
     .eq('status', 'published')
-    .eq('visibility', 'public')
     .gte('starts_at', new Date().toISOString())
     .order('starts_at', { ascending: true });
+
+  eventsQuery = hostedEventIds.length
+    ? eventsQuery.or(`visibility.eq.public,id.in.(${hostedEventIds.join(',')})`)
+    : eventsQuery.eq('visibility', 'public');
+
+  const { data: events } = await eventsQuery;
 
   const eventIds = (events || []).map((event) => event.id);
   const { data: seatCounts } = eventIds.length
     ? await supabase.rpc('event_seat_counts_for', { _events: eventIds })
     : { data: [] };
   let myRsvps = [];
-  let myHostRows = [];
 
   if (user && eventIds.length) {
-    const [{ data: rsvps }, { data: hostRows }] = await Promise.all([
-      supabase.from('rsvps').select('event_id, status').eq('user_id', user.id).in('event_id', eventIds),
-      supabase.from('event_hosts').select('event_id').eq('user_id', user.id).in('event_id', eventIds),
-    ]);
+    const { data: rsvps } = await supabase
+      .from('rsvps')
+      .select('event_id, status')
+      .eq('user_id', user.id)
+      .in('event_id', eventIds);
     myRsvps = rsvps || [];
-    myHostRows = hostRows || [];
   }
 
   const seatsByEvent = new Map((seatCounts || []).map((row) => [row.event_id, row]));
   const rsvpByEvent = new Map(myRsvps.map((rsvp) => [rsvp.event_id, rsvp.status]));
-  const hostedEventIds = new Set(myHostRows.map((hostRow) => hostRow.event_id));
+  const hostedEventIdSet = new Set(hostedEventIds);
   const browserEvents = (events || []).map((event) => ({
     ...event,
     seats_left: seatsByEvent.get(event.id)?.seats_left ?? event.seat_limit,
     seats_taken: seatsByEvent.get(event.id)?.seats_taken ?? 0,
     formatted_time: formatEventTime(event.starts_at, event.timezone),
-    involvement: hostedEventIds.has(event.id)
+    involvement: hostedEventIdSet.has(event.id)
       ? 'hosting'
       : rsvpByEvent.get(event.id) === 'going'
         ? 'attending'

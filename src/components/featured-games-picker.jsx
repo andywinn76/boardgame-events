@@ -161,18 +161,18 @@ export function FeaturedGamesPicker({
                     <Image
                       src={game.thumbnail_url}
                       alt={`${game.name} box art`}
-                      width={48}
-                      height={48}
-                      className="size-12 rounded object-contain"
+                      width={80}
+                      height={80}
+                      className="size-20 rounded object-contain"
                     />
                   ) : (
                     <div
-                      className="size-12 rounded bg-muted"
+                      className="size-20 rounded bg-muted"
                       aria-hidden="true"
                     />
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">
+                    <p className="truncate text-base font-semibold text-foreground">
                       {game.name}
                     </p>
                     {game.year_published && (
@@ -181,17 +181,17 @@ export function FeaturedGamesPicker({
                       </p>
                     )}
                     {game.weight && (
-                      <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-0.5">
+                      <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                        <div className="flex w-full items-center gap-0.5">
                           <GameFactIcon icon="gauge" label="Complexity" />
                           <span className="sr-only">Complexity:</span>
                           {Number(game.weight).toFixed(1)}/5
-                        </span>
-                        <span className="flex items-center gap-0.5">
+                        </div>
+                        <div className="flex w-full items-center gap-0.5">
                           <GameFactIcon icon="dumbbell" label="Weight" />
                           <span className="sr-only">Weight:</span>
                           {Number(game.weight).toFixed(1)}/5
-                        </span>
+                        </div>
                       </div>
                     )}
                   </div>

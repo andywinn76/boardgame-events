@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { zonedInputToUtc } from '@/lib/dates';
 import { getBggGames } from '@/lib/bgg';
@@ -157,6 +158,7 @@ export async function createEvent(formData) {
   const seatLimitRaw = formData.get('seat_limit');
   const featuredGamesEnabled = formData.get('featured_games_enabled') === 'on';
   const allowPlusOnes = formData.get('allow_plus_ones') === 'on';
+  const allowAnonymousRsvps = formData.get('allow_anonymous_rsvps') === 'on';
   const maxGuestsPerRsvp = Number(formData.get('max_guests_per_rsvp') || 1);
 
   if (!Number.isInteger(maxGuestsPerRsvp) || maxGuestsPerRsvp < 1 || maxGuestsPerRsvp > 10) {
@@ -269,6 +271,7 @@ export async function createEvent(formData) {
       seat_limit: seatLimitRaw ? Number(seatLimitRaw) : null,
       allow_waitlist: formData.get('allow_waitlist') === 'on',
       allow_plus_ones: allowPlusOnes,
+      allow_anonymous_rsvps: allowAnonymousRsvps,
       max_guests_per_rsvp: maxGuestsPerRsvp,
       featured_games_enabled: featuredGamesEnabled,
     })
@@ -319,6 +322,7 @@ export async function updateEvent(formData) {
   const seatLimitRaw = String(formData.get('seat_limit') || '');
   const featuredGamesEnabled = formData.get('featured_games_enabled') === 'on';
   const allowPlusOnes = formData.get('allow_plus_ones') === 'on';
+  const allowAnonymousRsvps = formData.get('allow_anonymous_rsvps') === 'on';
   const maxGuestsPerRsvp = Number(formData.get('max_guests_per_rsvp') || 1);
 
   if (!eventId || !slug || !title || !timezone || !startsAtLocal) {
@@ -388,6 +392,7 @@ export async function updateEvent(formData) {
       seat_limit: seatLimitRaw ? Number(seatLimitRaw) : null,
       allow_waitlist: formData.get('allow_waitlist') === 'on',
       allow_plus_ones: allowPlusOnes,
+      allow_anonymous_rsvps: allowAnonymousRsvps,
       max_guests_per_rsvp: maxGuestsPerRsvp,
       featured_games_enabled: featuredGamesEnabled,
     })
@@ -460,6 +465,94 @@ export async function cancelRsvp(formData) {
   }
 
   revalidatePath(`/events/${slug}`);
+}
+
+export async function anonymousRsvpToEvent(formData) {
+  const supabase = await createClient();
+  const slug = String(formData.get('slug') || '');
+  const eventId = String(formData.get('event_id') || '');
+  const firstName = String(formData.get('first_name') || '').trim();
+  const lastInitial = String(formData.get('last_initial') || '').trim();
+  const accessToken = `${crypto.randomUUID()}${crypto.randomUUID()}`;
+
+  if (!eventId || !slug || !/^[\p{L}][\p{L} '-]{0,39}$/u.test(firstName) || !/^\p{L}$/u.test(lastInitial)) {
+    redirect(`/events/${slug}?error=${encodeURIComponent('Enter a first name and one-letter last initial.')}`);
+  }
+
+  const { error } = await supabase.rpc('anonymous_rsvp_to_event', {
+    _event: eventId,
+    _first_name: firstName,
+    _last_initial: lastInitial,
+    _access_token: accessToken,
+  });
+
+  if (error) {
+    redirect(`/events/${slug}?error=${encodeURIComponent(error.message)}`);
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set(`guest_rsvp_${eventId}`, accessToken, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: `/events/${slug}`,
+    maxAge: 60 * 60 * 24 * 180,
+  });
+
+  revalidatePath(`/events/${slug}`);
+  revalidatePath(`/events/${slug}/manage`);
+  redirect(`/events/${slug}?guest_rsvp=confirmed`);
+}
+
+export async function cancelAnonymousRsvp(formData) {
+  const supabase = await createClient();
+  const slug = String(formData.get('slug') || '');
+  const eventId = String(formData.get('event_id') || '');
+  const cookieStore = await cookies();
+  const cookieName = `guest_rsvp_${eventId}`;
+  const accessToken = cookieStore.get(cookieName)?.value;
+
+  if (!accessToken) {
+    redirect(`/events/${slug}?error=${encodeURIComponent('This browser no longer has access to that guest RSVP.')}`);
+  }
+  const { error } = await supabase.rpc('anonymous_cancel_rsvp', {
+    _event: eventId,
+    _access_token: accessToken,
+  });
+  if (error) redirect(`/events/${slug}?error=${encodeURIComponent(error.message)}`);
+
+  cookieStore.delete(cookieName);
+  revalidatePath(`/events/${slug}`);
+  revalidatePath(`/events/${slug}/manage`);
+  redirect(`/events/${slug}?guest_rsvp=cancelled`);
+}
+
+export async function removeRsvp(formData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const slug = String(formData.get('slug') || '');
+  const eventId = String(formData.get('event_id') || '');
+  const rsvpId = String(formData.get('rsvp_id') || '');
+
+  if (!user) redirect('/login');
+  if (!eventId || !rsvpId) {
+    redirect(`/events/${slug}/manage?error=${encodeURIComponent('That RSVP could not be found.')}`);
+  }
+
+  const { error } = await supabase.rpc('host_remove_rsvp', {
+    _event: eventId,
+    _rsvp: rsvpId,
+  });
+
+  if (error) {
+    redirect(`/events/${slug}/manage?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath(`/events/${slug}`);
+  revalidatePath(`/events/${slug}/manage`);
+  redirect(`/events/${slug}/manage?removed=1`);
 }
 
 export async function addCohost(formData) {

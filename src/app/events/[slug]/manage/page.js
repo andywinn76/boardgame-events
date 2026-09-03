@@ -10,6 +10,7 @@ import {
   completeEvent,
   setCheckin,
   setNoShow,
+  removeRsvp,
 } from '../../actions';
 import { PageShell } from '@/components/page-shell';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -19,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DismissibleNotice } from '@/components/dismissible-notice';
 
 const KIND_LABEL = {
   vision: 'Vision',
@@ -38,7 +40,7 @@ const RSVP_STATUS_LABEL = {
 
 export default async function ManageEventPage({ params, searchParams }) {
   const { slug } = await params;
-  const { error } = await searchParams;
+  const { error, removed } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -84,7 +86,7 @@ export default async function ManageEventPage({ params, searchParams }) {
     supabase.rpc('event_considerations_digest', { _event: event.id }),
     supabase
       .from('rsvps')
-      .select('user_id, status, seats_claimed, checked_in_at, no_show, profiles(username, display_name)')
+      .select('id, user_id, guest_first_name, guest_last_initial, status, seats_claimed, checked_in_at, no_show, profiles(username, display_name)')
       .eq('event_id', event.id)
       .in('status', ['going', 'waitlist', 'maybe'])
       .order('created_at', { ascending: true }),
@@ -107,6 +109,7 @@ export default async function ManageEventPage({ params, searchParams }) {
     ? await supabase.from('attendee_reliability').select('user_id, attended, no_shows').in('user_id', goingUserIds)
     : { data: [] };
   const reliabilityByUser = Object.fromEntries((reliability || []).map((r) => [r.user_id, r]));
+  const hostUserIds = new Set((hosts || []).map((host) => host.user_id));
   const goingRoster = (roster || []).filter((r) => r.status === 'going');
   const confirmedGuestCount = goingRoster.reduce((total, rsvp) => total + Math.max(0, rsvp.seats_claimed - 1), 0);
 
@@ -125,6 +128,11 @@ export default async function ManageEventPage({ params, searchParams }) {
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+      {removed && (
+        <DismissibleNotice>
+          The registration was removed and any available seat was offered to the waitlist.
+        </DismissibleNotice>
       )}
 
       {event.status === 'cancelled' && (
@@ -159,9 +167,14 @@ export default async function ManageEventPage({ params, searchParams }) {
               {roster.map((r) => {
                 const rel = reliabilityByUser[r.user_id];
                 return (
-                  <li key={r.user_id} className="flex items-center justify-between gap-3 text-sm">
+                  <li key={r.id} className="flex items-center justify-between gap-3 text-sm">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="font-medium text-foreground">{r.profiles?.display_name || r.profiles?.username}</span>
+                      <span className="font-medium text-foreground">
+                        {r.user_id
+                          ? r.profiles?.display_name || r.profiles?.username
+                          : `${r.guest_first_name} ${r.guest_last_initial}.`}
+                      </span>
+                      {!r.user_id && <Badge variant="outline">No account</Badge>}
                       <Badge variant="secondary">{RSVP_STATUS_LABEL[r.status]}</Badge>
                       {r.seats_claimed > 1 && (
                         <Badge variant="secondary">
@@ -176,7 +189,8 @@ export default async function ManageEventPage({ params, searchParams }) {
                         </span>
                       )}
                     </div>
-                    {r.status === 'going' && isActive && (
+                    <span className="flex shrink-0 gap-3">
+                    {r.user_id && r.status === 'going' && isActive && (
                       <span className="flex shrink-0 gap-3">
                         <form action={setCheckin}>
                           <input type="hidden" name="event_id" value={event.id} />
@@ -198,6 +212,15 @@ export default async function ManageEventPage({ params, searchParams }) {
                         </form>
                       </span>
                     )}
+                      {!hostUserIds.has(r.user_id) && <form action={removeRsvp}>
+                        <input type="hidden" name="event_id" value={event.id} />
+                        <input type="hidden" name="slug" value={slug} />
+                        <input type="hidden" name="rsvp_id" value={r.id} />
+                        <button type="submit" className="text-xs font-medium text-destructive underline underline-offset-2">
+                          Remove RSVP
+                        </button>
+                      </form>}
+                    </span>
                   </li>
                 );
               })}

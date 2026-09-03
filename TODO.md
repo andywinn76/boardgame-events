@@ -5,7 +5,7 @@
 - [x] Fix Supabase authentication email links that incorrectly direct users to localhost.
 - [x] Add a show-password eye icon to password fields on the registration and login forms.
 - [x] Finish implementing BoardGameGeek game lookup now that the BGG API application has been approved.
-- [ ] Add guest and +1 support to RSVPs.
+- [x] Add guest and +1 support to RSVPs.
   - Let hosts enable or disable guests when creating or editing an event.
   - When enabled, let an attendee choose how many guest seats they need while RSVPing.
   - Count the attendee and every guest against event capacity and waitlist availability.
@@ -16,9 +16,27 @@
   - Notifications are currently created only for waitlist promotion and event cancellation, so the page is usually empty.
   - Decide which additional events should create notifications, such as invitations, co-host changes, RSVP changes, new event messages, and upcoming-event reminders.
   - Add an unread indicator or count to the header so users know when the page has something new.
-- [ ] Formalize a guest browsing mode for visitors who are not signed in.
+- [x] Formalize a guest browsing mode for visitors who are not signed in.
   - Let visitors browse upcoming public events and open public event detail pages.
   - Hide or disable RSVP, host, message, report, settings, and management actions until the visitor signs in.
   - Replace unavailable actions with a clear Log in or Sign up prompt that returns the visitor to the event afterward.
   - Keep private addresses, attendee-only details, messages, attendee names, and other protected information hidden from visitors.
   - Review navigation and empty states so the public experience feels intentional instead of like a signed-in page with broken actions.
+- [ ] Add member profile pages at `/users/[username]`.
+  - Show a safe identity summary with avatar, display name, username, bio, and preferred pronouns.
+  - Show "Games I’m excited to play" and "Games I’d rather avoid."
+  - Show upcoming public events the member is hosting.
+  - Let members opt in to displaying selected gaming preferences on their profile.
+  - Give profiles Public, Members only, and Private visibility settings.
+  - For a private profile, show only a minimal identity page explaining that the member’s profile is private.
+  - Give signed-out visitors only the fields allowed by the profile’s visibility, while signed-in members can see opt-in gaming preferences on Public and Members only profiles.
+  - Keep considerations, accessibility details, exact locations, email addresses, private real-name fields, reliability data, no-show statistics, and attending-event history off member profiles.
+  - Add a narrowly scoped `get_public_profile(username)` database function that returns only approved fields instead of broadening access to profile and preference tables.
+  - Link visible member names to their profiles from event hosts, attendee lists, event messages, host-management rosters, and co-host lists.
+  - Preserve guest-browsing privacy by linking attendee names only where those names are already authorized to appear.
+- [ ] Add user avatar images throughout the app.
+  - Let members upload an avatar image from profile settings.
+  - Fall back to the first character of the username, including a number when the username begins with one.
+- [ ] Return and display more BoardGameGeek matches when searching for games.
+- [ ] Add a way to view past events.
+  - Decide where the entry point belongs and whether signed-out visitors, members, and hosts should see different event history.

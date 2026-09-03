@@ -30,7 +30,7 @@ export default async function EditEventPage({ params, searchParams }) {
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, slug, title, description, starts_at, ends_at, timezone, venue_id, location_label, neighborhood, cross_streets, city, region, seat_limit, allow_waitlist, allow_plus_ones, max_guests_per_rsvp, featured_games_enabled, visibility'
+      'id, slug, title, description, starts_at, ends_at, timezone, venue_id, location_label, neighborhood, cross_streets, city, region, seat_limit, allow_waitlist, allow_plus_ones, allow_anonymous_rsvps, max_guests_per_rsvp, featured_games_enabled, visibility'
     )
     .eq('slug', slug)
     .single();
@@ -151,6 +151,22 @@ export default async function EditEventPage({ params, searchParams }) {
           <legend className="px-1 text-sm font-medium text-foreground">Attendees</legend>
 
           <SeatLimitField defaultValue={event.seat_limit} />
+
+          <div className="flex items-center gap-2">
+            <input
+              id="allow_anonymous_rsvps"
+              name="allow_anonymous_rsvps"
+              type="checkbox"
+              defaultChecked={event.allow_anonymous_rsvps}
+              className="size-4 rounded border-input accent-primary"
+            />
+            <Label htmlFor="allow_anonymous_rsvps" className="font-normal">
+              Allow people without an account to RSVP
+            </Label>
+          </div>
+          <p className="-mt-2 ml-6 text-xs text-muted-foreground">
+            Unregistered users may RSVP with a first name and last initial. Not recommended for public events.
+          </p>
 
           <div className="flex items-center gap-2">
             <input

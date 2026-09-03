@@ -14,16 +14,17 @@ import {
 import { createClient } from '@/lib/supabase/server';
 import { formatEventTime } from '@/lib/dates';
 import { venueMapUrl, coarseMapUrl } from '@/lib/maps';
-import { rsvpToEvent, cancelRsvp, postMessage, reportEvent } from '../actions';
+import { anonymousRsvpToEvent, cancelAnonymousRsvp, rsvpToEvent, cancelRsvp, postMessage, reportEvent } from '../actions';
 import { PageShell } from '@/components/page-shell';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DismissibleNotice } from '@/components/dismissible-notice';
 import { CalendarMenu } from '@/components/calendar-menu';
 import { GameFactIcon } from '@/components/game-fact-icon';
 import { eventCalendarLinks } from '@/lib/calendar-links';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { formatInTimeZone } from 'date-fns-tz';
 
 const selectClass =
@@ -43,13 +44,13 @@ function GuestCountSelect({ defaultValue = 0, maxGuests = 5 }) {
 
 export default async function EventDetailPage({ params, searchParams }) {
   const { slug } = await params;
-  const { error, reported, updated } = await searchParams;
+  const { error, reported, updated, guest_rsvp: guestRsvp } = await searchParams;
   const supabase = await createClient();
 
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, description, starts_at, ends_at, timezone, location_label, neighborhood, cross_streets, city, region, venue_id, seat_limit, allow_waitlist, allow_plus_ones, max_guests_per_rsvp, featured_games_enabled, visibility, status, cancellation_reason, created_by, profiles!events_created_by_fkey(username, display_name)'
+      'id, title, description, starts_at, ends_at, timezone, location_label, neighborhood, cross_streets, city, region, venue_id, seat_limit, allow_waitlist, allow_plus_ones, allow_anonymous_rsvps, max_guests_per_rsvp, featured_games_enabled, visibility, status, cancellation_reason, created_by, profiles!events_created_by_fkey(username, display_name)'
     )
     .eq('slug', slug)
     .single();
@@ -63,6 +64,10 @@ export default async function EventDetailPage({ params, searchParams }) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const guestAccessToken = (await cookies()).get(`guest_rsvp_${event.id}`)?.value;
+  const { data: anonymousRsvp } = !user && guestAccessToken
+    ? await supabase.rpc('anonymous_rsvp_details', { _event: event.id, _access_token: guestAccessToken }).maybeSingle()
+    : { data: null };
 
   const [{ data: seatCounts }, { data: featuredGames }, { data: myRsvp }, { data: hostRow }] = await Promise.all([
     supabase.rpc('event_seat_count', { _event: event.id }).single(),
@@ -87,19 +92,24 @@ export default async function EventDetailPage({ params, searchParams }) {
   const isFull = event.seat_limit != null && seatsLeft <= 0;
   const activeStatus = myRsvp && myRsvp.status !== 'cancelled' ? myRsvp.status : null;
   const isHost = Boolean(hostRow);
-  const canViewPrivateDetails = isHost || activeStatus === 'going';
+  const canViewPrivateDetails = isHost || activeStatus === 'going' || anonymousRsvp?.status === 'going';
+  const canViewMessages = isHost || activeStatus === 'going';
 
   const [{ data: attendeeNames }, { data: venue }, { data: messages }] = canViewPrivateDetails
     ? await Promise.all([
-        supabase.rpc('event_attendee_names', { _event: event.id }),
+        anonymousRsvp
+          ? supabase.rpc('anonymous_event_attendee_names', { _event: event.id, _access_token: guestAccessToken })
+          : supabase.rpc('event_attendee_names', { _event: event.id }),
         event.venue_id
-          ? supabase.rpc('event_venue_details', { _event: event.id }).maybeSingle()
+          ? anonymousRsvp
+            ? supabase.rpc('anonymous_event_venue_details', { _event: event.id, _access_token: guestAccessToken }).maybeSingle()
+            : supabase.rpc('event_venue_details', { _event: event.id }).maybeSingle()
           : Promise.resolve({ data: null }),
-        supabase
+        canViewMessages ? supabase
           .from('event_messages')
           .select('id, body, created_at, profiles(id, username, display_name)')
           .eq('event_id', event.id)
-          .order('created_at', { ascending: true }),
+          .order('created_at', { ascending: true }) : Promise.resolve({ data: null }),
       ])
     : [{ data: [] }, { data: null }, { data: null }];
 
@@ -162,15 +172,17 @@ export default async function EventDetailPage({ params, searchParams }) {
       </div>
 
       {reported && (
-        <Alert>
-          <AlertDescription>Thanks. This event has been reported to the moderation team.</AlertDescription>
-        </Alert>
+        <DismissibleNotice>Thanks. This event has been reported to the moderation team.</DismissibleNotice>
       )}
 
       {updated === 'event' && (
-        <Alert>
-          <AlertDescription>Your event has been updated.</AlertDescription>
-        </Alert>
+        <DismissibleNotice>Your event has been updated.</DismissibleNotice>
+      )}
+      {guestRsvp === 'confirmed' && (
+        <DismissibleNotice>Your guest RSVP has been saved.</DismissibleNotice>
+      )}
+      {guestRsvp === 'cancelled' && (
+        <DismissibleNotice>Your guest RSVP was cancelled.</DismissibleNotice>
       )}
 
       {event.description && (
@@ -407,12 +419,16 @@ export default async function EventDetailPage({ params, searchParams }) {
 
       {event.status === 'published' && (
         <div>
-          {!user && (
+          {!user && !anonymousRsvp && (
             <Card className="px-(--card-spacing)">
               <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
                   <p className="font-heading text-lg font-semibold text-foreground">Interested in attending?</p>
-                  <p className="mt-1 text-sm text-muted-foreground">Log in or create an account to RSVP.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {event.allow_anonymous_rsvps
+                      ? 'Use an account, or RSVP below with just your name.'
+                      : 'Log in or create an account to RSVP.'}
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   <Button nativeButton={false} variant="outline" render={<Link href={loginForRsvp} />}>
@@ -422,6 +438,54 @@ export default async function EventDetailPage({ params, searchParams }) {
                     Sign up
                   </Button>
                 </div>
+              </div>
+            </Card>
+          )}
+
+          {!user && !anonymousRsvp && event.allow_anonymous_rsvps && (isFull ? event.allow_waitlist : true) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">RSVP without an account</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form action={anonymousRsvpToEvent} className="flex flex-wrap items-end gap-3">
+                  <input type="hidden" name="event_id" value={event.id} />
+                  <input type="hidden" name="slug" value={slug} />
+                  <label className="min-w-44 flex-1 text-sm font-medium text-foreground">
+                    First name
+                    <Input name="first_name" required maxLength={40} autoComplete="given-name" className="mt-1" />
+                  </label>
+                  <label className="w-32 text-sm font-medium text-foreground">
+                    Last initial
+                    <Input name="last_initial" required maxLength={1} autoComplete="family-name" className="mt-1" />
+                  </label>
+                  <Button type="submit">{isFull ? 'Join waitlist' : 'RSVP as guest'}</Button>
+                  <p className="w-full text-xs text-muted-foreground">
+                    Your name will appear as your first name and last initial. An account is not required.
+                  </p>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {!user && anonymousRsvp && (
+            <Card className="px-(--card-spacing)">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-heading text-lg font-semibold text-primary">
+                    {anonymousRsvp.status === 'going' ? 'You’re going!' : 'You’re on the waitlist'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    RSVP for {anonymousRsvp.guest_first_name} {anonymousRsvp.guest_last_initial}.
+                  </p>
+                </div>
+                <form action={cancelAnonymousRsvp}>
+                  <input type="hidden" name="event_id" value={event.id} />
+                  <input type="hidden" name="slug" value={slug} />
+                  <Button type="submit" variant="outline">
+                    {anonymousRsvp.status === 'going' ? 'Cancel RSVP' : 'Leave waitlist'}
+                  </Button>
+                </form>
               </div>
             </Card>
           )}
@@ -509,7 +573,7 @@ export default async function EventDetailPage({ params, searchParams }) {
         </div>
       )}
 
-      {canViewPrivateDetails && (
+      {canViewMessages && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-1.5 text-lg text-muted-foreground">
