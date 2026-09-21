@@ -223,9 +223,9 @@ export function AvatarUploader({ userId, initialAvatarUrl }) {
               onError={() => setAvatarUrl('')}
             />
           ) : (
-            // This local SVG is a reusable, resolution-independent 512px placeholder.
+            // This local image is the standard profile fallback.
             // eslint-disable-next-line @next/next/no-img-element
-            <img src="/avatar-placeholder.svg" alt="Default profile avatar" className="size-full" />
+            <img src="/meeple-icon.png" alt="Default meeple profile avatar" className="size-full" />
           )}
         </div>
         <div
