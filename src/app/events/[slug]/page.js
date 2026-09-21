@@ -136,7 +136,7 @@ export default async function EventDetailPage({ params, searchParams }) {
       ? anonymousRsvp
         ? supabase.rpc('anonymous_event_attendee_names', { _event: event.id, _access_token: guestAccessToken })
         : supabase.rpc('event_attendee_names', { _event: event.id })
-      : Promise.resolve({ data: [] }),
+      : supabase.rpc('public_event_registered_attendee_names', { _event: event.id }),
     event.venue_id
       ? anonymousRsvp
         ? supabase.rpc('anonymous_event_venue_details', { _event: event.id, _access_token: guestAccessToken }).maybeSingle()
@@ -417,7 +417,7 @@ export default async function EventDetailPage({ params, searchParams }) {
                 : `${seatsLeft} of ${event.seat_limit} seats left`
               : 'Unlimited seats'}
           </p>
-          {canViewPrivateDetails && attendeeNames?.length > 0 && (
+          {attendeeNames?.length > 0 && (
             <p className="text-muted-foreground">
               {attendeeNames
                 .map(({ attendee_name: attendeeName, is_organizer: isOrganizer }) =>

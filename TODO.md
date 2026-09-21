@@ -45,3 +45,14 @@
   - If enabled, scope shared venue discovery geographically so hosts only see useful nearby venues rather than irrelevant results from other countries or regions.
   - Define privacy, moderation, duplicate-venue, and venue-owner update rules before exposing shared venues.
 - [ ] Consider bringing the calendar feed back to the user preferences section.
+- [ ] Allow hosts to see canceled events (soft delete events necessary) and allow permanent deletion of events.
+- [ ] Allow users to control their comments on event pages.
+  - Users should be allowed to edit and delete their comments.
+  - Allow users to +1 other users' comments in an event they are rsvp'd for. (Like liking on Facebook)
+  - Users should have an activity feed notifying them of comments in events they are attending, replies to their events and when someone +1s a comment.
+- [ ] Make sure users can change their email address and passwords so they can't get locked out of their accounts.
+- [ ] On calendar view, make sure that ALL the hosts events are listed, not just the publicly viewable ones. This will make it easier to manage their events.
+- [ ] Add banner image upload to events. If not uploaded, have an option to use a filler image or have the app generate an image using a collage of the featured games fading one into the next.
+- [ ] Add metadata to each event page to display well on WhatsApp and other social media shares
+- [ ] Add a share button to the event to share on social media.
+- [ ] Change "complexity" to "rating" on the featured game previews, since now both complexity and weight are doing the same thing. Pick a suitable icon for rating and update all tooltips throughout the app.

@@ -229,9 +229,15 @@ export default async function PreferencesPage({ searchParams }) {
 
             <div className="space-y-1.5">
               <Label htmlFor="default_share_scope">Default sharing for new considerations</Label>
+              <p id="default-share-scope-help" className="text-xs text-muted-foreground">
+                Considerations are accessibility, dietary, sensory, or other needs that can help make
+                game night more comfortable. Choose who can see new considerations (added in the
+                Considerations tab above) by default.
+              </p>
               <select
                 id="default_share_scope"
                 name="default_share_scope"
+                aria-describedby="default-share-scope-help"
                 defaultValue={prefs?.default_share_scope || 'hosts_only'}
                 className={selectClass}
               >
