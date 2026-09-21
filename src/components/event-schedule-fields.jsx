@@ -28,6 +28,7 @@ export function EventScheduleFields({
             id="timezone"
             name="timezone"
             defaultValue={defaultTimezone}
+            required
             className={selectClass}
           >
             {SUPPORTED_TIMEZONES.map((timezone) => (

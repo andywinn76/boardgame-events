@@ -42,7 +42,7 @@ export function QuarterHourDateTimeField({
   );
   const [date, setDate] = useState(initialValue.date);
   const [hour, setHour] = useState(initialValue.hour);
-  const [minute, setMinute] = useState(initialValue.minute);
+  const [minute, setMinute] = useState(initialValue.minute || (required ? "00" : ""));
   const [period, setPeriod] = useState(initialValue.period);
   const hasPartialTime = Boolean(hour || minute || period);
   const hasCompleteTime = Boolean(hour && minute && period);
@@ -93,7 +93,7 @@ export function QuarterHourDateTimeField({
         className={selectClass}
         onChange={(event) => setMinute(event.target.value)}
       >
-        <option value="">Min.</option>
+        <option value=""></option>
         {minuteOptions.map((option) => (
           <option key={option} value={option}>
             {option}

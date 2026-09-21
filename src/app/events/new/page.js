@@ -6,12 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FeaturedGamesPicker } from '@/components/featured-games-picker';
 import { SeatLimitField } from '@/components/seat-limit-field';
 import { VenueMapPreview } from '@/components/venue-map-preview';
 import { EventScheduleFields } from '@/components/event-schedule-fields';
 import { AnonymousRsvpOption } from '@/components/anonymous-rsvp-option';
+import { EventCreationForm } from '@/components/event-creation-form';
 
 const selectClass =
   'h-8 w-full min-w-0 rounded-lg border border-input bg-card px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
@@ -38,16 +38,7 @@ export default async function NewEventPage({ searchParams }) {
     <PageShell>
       <h1 className="font-heading text-3xl font-bold text-foreground">Host an event</h1>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <form
-        action={createEvent}
-        className="space-y-4 [&_[data-slot=input]]:bg-card [&_[data-slot=textarea]]:bg-card"
-      >
+      <EventCreationForm action={createEvent} initialError={error}>
         <div className="space-y-1.5">
           <Label htmlFor="title">Title</Label>
           <Input id="title" name="title" type="text" required />
@@ -65,9 +56,7 @@ export default async function NewEventPage({ searchParams }) {
         <FeaturedGamesPicker />
 
         <fieldset className="space-y-4 rounded-xl border border-border bg-muted/30 p-4">
-          <legend className="px-1 text-sm font-medium text-foreground">
-            Venue <span className="font-normal text-muted-foreground">(optional)</span>
-          </legend>
+          <legend className="px-1 text-sm font-medium text-foreground">Venue or location</legend>
 
           {savedVenues?.length > 0 && (
             <div className="space-y-1.5">
@@ -269,7 +258,7 @@ export default async function NewEventPage({ searchParams }) {
         <Button type="submit" size="lg" className="w-full">
           Publish event
         </Button>
-      </form>
+      </EventCreationForm>
     </PageShell>
   );
 }

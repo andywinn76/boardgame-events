@@ -24,6 +24,28 @@ function slugify(title) {
   return `${base}-${suffix}`;
 }
 
+function parseEventTimes(startsAtLocal, endsAtLocal, timezone) {
+  const startsAt = zonedInputToUtc(startsAtLocal, timezone);
+  const endsAt = endsAtLocal ? zonedInputToUtc(endsAtLocal, timezone) : null;
+
+  if (Number.isNaN(startsAt.getTime()) || (endsAt && Number.isNaN(endsAt.getTime()))) {
+    throw new Error('Enter valid start and end dates and times.');
+  }
+
+  if (endsAt && endsAt <= startsAt) {
+    throw new Error('The event end date and time must be after the start date and time.');
+  }
+
+  return {
+    startsAt: startsAt.toISOString(),
+    endsAt: endsAt?.toISOString() ?? null,
+  };
+}
+
+function eventFormError(error, fields = []) {
+  return { error, fields };
+}
+
 function venueLocationFromForm(formData) {
   return {
     addressLine1: String(formData.get('new_venue_address_line1') || '').trim(),
@@ -141,7 +163,7 @@ async function resolveFeaturedGames(supabase, ids) {
   return games;
 }
 
-export async function createEvent(formData) {
+export async function createEvent(_previousState, formData) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -162,14 +184,14 @@ export async function createEvent(formData) {
   const maxGuestsPerRsvp = Number(formData.get('max_guests_per_rsvp') || 1);
 
   if (!Number.isInteger(maxGuestsPerRsvp) || maxGuestsPerRsvp < 1 || maxGuestsPerRsvp > 10) {
-    redirect(`/events/new?error=${encodeURIComponent('Choose a guest limit between one and ten.')}`);
+    return eventFormError('Choose a guest limit between one and ten.', ['max_guests_per_rsvp']);
   }
 
   let featuredGameIds;
   try {
     featuredGameIds = parseFeaturedGameIds(formData);
   } catch (featuredGamesError) {
-    redirect(`/events/new?error=${encodeURIComponent(featuredGamesError.message)}`);
+    return eventFormError(featuredGamesError.message, ['featured_games_enabled']);
   }
 
   let featuredGames = [];
@@ -177,12 +199,29 @@ export async function createEvent(formData) {
     try {
       featuredGames = await resolveFeaturedGames(supabase, featuredGameIds);
     } catch (bggError) {
-      redirect(`/events/new?error=${encodeURIComponent(bggError.message)}`);
+      return eventFormError(bggError.message, ['featured_games_enabled']);
     }
   }
 
   if (!title || !timezone || !startsAtLocal) {
-    redirect(`/events/new?error=${encodeURIComponent('Title, date/time, and timezone are required')}`);
+    const fields = [];
+    if (!title) fields.push('title');
+    if (!timezone) fields.push('timezone');
+    if (!startsAtLocal) fields.push('starts_at_date', 'starts_at_hour', 'starts_at_minute', 'starts_at_period');
+    return eventFormError('Title, date/time, and timezone are required.', fields);
+  }
+
+  let eventTimes;
+  try {
+    eventTimes = parseEventTimes(startsAtLocal, endsAtLocal, timezone);
+  } catch (timeError) {
+    const prefix = endsAtLocal ? 'ends_at' : 'starts_at';
+    return eventFormError(timeError.message, [
+      `${prefix}_date`,
+      `${prefix}_hour`,
+      `${prefix}_minute`,
+      `${prefix}_period`,
+    ]);
   }
 
   let venueId = String(formData.get('venue_id') || '').trim() || null;
@@ -193,11 +232,15 @@ export async function createEvent(formData) {
     try {
       await geocodeSavedVenueIfNeeded(supabase, venueId, user.id);
     } catch (geocodingError) {
-      redirect(`/events/new?error=${encodeURIComponent(geocodingError.message)}`);
+      return eventFormError(geocodingError.message, ['venue_id']);
     }
   }
 
   const newVenueName = String(formData.get('new_venue_name') || '').trim();
+  if (!venueId && !newVenueName && !eventLocation.locationLabel) {
+    return eventFormError('Choose a saved venue, add a new venue, or enter a location name.', ['location_label']);
+  }
+
   if (!venueId && newVenueName) {
     const venueLocation = venueLocationFromForm(formData);
     let coordinates;
@@ -205,7 +248,13 @@ export async function createEvent(formData) {
       coordinates = manualCoordinatesFromForm(formData)
         || await geocodeWhenConfigured(buildVenueGeocodeQuery(venueLocation));
     } catch (geocodingError) {
-      redirect(`/events/new?error=${encodeURIComponent(geocodingError.message)}`);
+      return eventFormError(geocodingError.message, [
+        'new_venue_address_line1',
+        'new_venue_city',
+        'new_venue_region',
+        'new_venue_lat',
+        'new_venue_lng',
+      ]);
     }
 
     const { data: venue, error: venueError } = await supabase
@@ -232,7 +281,7 @@ export async function createEvent(formData) {
       .single();
 
     if (venueError) {
-      redirect(`/events/new?error=${encodeURIComponent(venueError.message)}`);
+      return eventFormError(venueError.message, ['new_venue_name']);
     }
 
     venueId = venue.id;
@@ -242,7 +291,13 @@ export async function createEvent(formData) {
     try {
       eventCoordinates = await geocodeWhenConfigured(buildEventGeocodeQuery(eventLocation));
     } catch (geocodingError) {
-      redirect(`/events/new?error=${encodeURIComponent(geocodingError.message)}`);
+      return eventFormError(geocodingError.message, [
+        'location_label',
+        'neighborhood',
+        'city',
+        'region',
+        'cross_streets',
+      ]);
     }
   }
 
@@ -255,8 +310,8 @@ export async function createEvent(formData) {
       description: formData.get('description') || null,
       status: 'published',
       visibility: formData.get('visibility') || 'public',
-      starts_at: zonedInputToUtc(startsAtLocal, timezone).toISOString(),
-      ends_at: endsAtLocal ? zonedInputToUtc(endsAtLocal, timezone).toISOString() : null,
+      starts_at: eventTimes.startsAt,
+      ends_at: eventTimes.endsAt,
       timezone,
       venue_id: venueId,
       location_label: eventLocation.locationLabel || null,
@@ -279,7 +334,10 @@ export async function createEvent(formData) {
     .single();
 
   if (error) {
-    redirect(`/events/new?error=${encodeURIComponent(error.message)}`);
+    const fields = error.message.includes('events_check')
+      ? ['ends_at_date', 'ends_at_hour', 'ends_at_minute', 'ends_at_period']
+      : [];
+    return eventFormError(error.message, fields);
   }
 
   const { error: hostRsvpError } = await supabase.rpc('rsvp_to_event', {
@@ -329,6 +387,13 @@ export async function updateEvent(formData) {
     redirect(`/events/${slug}/edit?error=${encodeURIComponent('Title, date/time, and timezone are required')}`);
   }
 
+  let eventTimes;
+  try {
+    eventTimes = parseEventTimes(startsAtLocal, endsAtLocal, timezone);
+  } catch (timeError) {
+    redirect(`/events/${slug}/edit?error=${encodeURIComponent(timeError.message)}`);
+  }
+
   if (!Number.isInteger(maxGuestsPerRsvp) || maxGuestsPerRsvp < 1 || maxGuestsPerRsvp > 10) {
     redirect(`/events/${slug}/edit?error=${encodeURIComponent('Choose a guest limit between one and ten.')}`);
   }
@@ -376,8 +441,8 @@ export async function updateEvent(formData) {
       title,
       description: String(formData.get('description') || '').trim() || null,
       visibility: formData.get('visibility') || 'public',
-      starts_at: zonedInputToUtc(startsAtLocal, timezone).toISOString(),
-      ends_at: endsAtLocal ? zonedInputToUtc(endsAtLocal, timezone).toISOString() : null,
+      starts_at: eventTimes.startsAt,
+      ends_at: eventTimes.endsAt,
       timezone,
       venue_id: venueId,
       location_label: eventLocation.locationLabel || null,
