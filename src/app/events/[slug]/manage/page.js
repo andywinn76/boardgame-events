@@ -157,7 +157,7 @@ export default async function ManageEventPage({ params, searchParams }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm text-muted-foreground">Roster</CardTitle>
+          <CardTitle className="text-lg text-muted-foreground">Roster</CardTitle>
         </CardHeader>
         <CardContent>
           {!roster?.length ? (
@@ -231,7 +231,7 @@ export default async function ManageEventPage({ params, searchParams }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <CardTitle className="flex items-center gap-1.5 text-lg text-muted-foreground">
             <HeartHandshake className="size-4" />
             Considerations digest
           </CardTitle>
@@ -257,7 +257,7 @@ export default async function ManageEventPage({ params, searchParams }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <CardTitle className="flex items-center gap-1.5 text-lg text-muted-foreground">
             <ShieldCheck className="size-4" />
             Co-hosts
           </CardTitle>
@@ -298,7 +298,7 @@ export default async function ManageEventPage({ params, searchParams }) {
       {event.visibility === 'invite_only' && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <CardTitle className="flex items-center gap-1.5 text-lg text-muted-foreground">
               <Mail className="size-4" />
               Invites
             </CardTitle>
@@ -335,7 +335,7 @@ export default async function ManageEventPage({ params, searchParams }) {
       {isActive && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <CardTitle className="flex items-center gap-1.5 text-lg text-muted-foreground">
               <PartyPopper className="size-4" />
               Wrap up
             </CardTitle>
